@@ -1,12 +1,14 @@
-from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
 import csv
-from datetime import datetime
+import json
 import os
 from typing import Any, Dict
 
 from modules.job_store import JobStore
 from modules.job_worker import JobWorker
+from datetime import datetime, timezone
+
+from flask import Flask, jsonify, render_template, request
+from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
@@ -16,11 +18,103 @@ JOBS_DB_PATH = os.getenv('JOBS_DB_PATH', os.path.join('data', 'jobs.db'))
 
 job_store = JobStore(JOBS_DB_PATH)
 job_worker = JobWorker(job_store)
+JOB_RUNS_FILE = 'job_runs.json'
+
+
+def load_job_runs():
+    """Load job runs from the JSON file."""
+    if not os.path.exists(JOB_RUNS_FILE):
+        return []
+    try:
+        with open(JOB_RUNS_FILE, 'r', encoding='utf-8') as file:
+            return json.load(file)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return []
+
+
+def save_job_runs(job_runs):
+    """Persist job runs to the JSON file."""
+    with open(JOB_RUNS_FILE, 'w', encoding='utf-8') as file:
+        json.dump(job_runs, file, indent=2)
+
+
+def refresh_job_runs(job_runs):
+    """
+    Update progress for queued/running job runs based on elapsed time.
+
+    This simulates backend processing so the dashboard can poll for updates.
+    """
+    now = datetime.now(timezone.utc)
+    updated = False
+
+    for run in job_runs:
+        if run.get('status') in {'queued', 'running'}:
+            started_at = run.get('started_at')
+            if started_at:
+                start_time = datetime.fromisoformat(started_at)
+            else:
+                # Move queued jobs into running state when first seen
+                run['started_at'] = now.isoformat()
+                start_time = now
+                run['status'] = 'running'
+                updated = True
+
+            elapsed_seconds = max((now - start_time).total_seconds(), 0)
+            # Increase progress by 5% per second, cap at 100
+            progress = min(100, int(elapsed_seconds * 5))
+
+            if progress != run.get('progress', 0):
+                run['progress'] = progress
+                updated = True
+
+            if progress >= 100 and run.get('status') != 'completed':
+                run['status'] = 'completed'
+                run['completed_at'] = now.isoformat()
+                updated = True
+
+    if updated:
+        save_job_runs(job_runs)
+
+    return job_runs
 ##> ------ Karthik Sarode : karthik.sarode23@gmail.com - UI for excel files ------
 @app.route('/')
 def home():
     """Displays the home page of the application."""
     return render_template('index.html')
+
+
+@app.route('/job-runs', methods=['GET'])
+def list_job_runs():
+    """Return job runs with simulated progress updates for the dashboard."""
+    job_runs = refresh_job_runs(load_job_runs())
+    return jsonify(job_runs)
+
+
+@app.route('/job-runs', methods=['POST'])
+def create_job_run():
+    """Create a new job run entry to track on the dashboard."""
+    payload = request.get_json(force=True)
+    now = datetime.now(timezone.utc).isoformat()
+    job_runs = load_job_runs()
+
+    run_id = f"run-{len(job_runs) + 1}-{int(datetime.now().timestamp())}"
+    new_run = {
+        'id': run_id,
+        'status': 'queued',
+        'progress': 0,
+        'created_at': now,
+        'started_at': None,
+        'completed_at': None,
+        'personal': payload.get('personal', {}),
+        'screening': payload.get('screening', {}),
+        'filters': payload.get('filters', {}),
+        'parameters': payload.get('parameters', {}),
+    }
+
+    job_runs.append(new_run)
+    save_job_runs(job_runs)
+
+    return jsonify(new_run), 201
 
 @app.route('/applied-jobs', methods=['GET'])
 def get_applied_jobs():

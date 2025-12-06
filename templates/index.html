@@ -1,201 +1,753 @@
-<!-- ##> ------ Karthik Sarode : karthik.sarode23@gmail.com - UI for excel files ------ -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Applied Jobs</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Automation Dashboard</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { 
-            border-collapse: collapse; 
-            width: 100%;
-            margin-top: 20px;
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --surface: #ffffff;
+            --muted: #f3f4f6;
+            --border: #e5e7eb;
+            --text: #111827;
+            --text-muted: #6b7280;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --danger: #dc2626;
         }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 12px; 
-            text-align: left; 
+
+        * {
+            box-sizing: border-box;
         }
-        th { 
-            background-color: #f4f4f4; 
-            font-weight: bold;
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: #f8fafc;
+            color: var(--text);
+            margin: 0;
+            padding: 0;
         }
-        tr:nth-child(even) { background-color: #f8f8f8; }
-        a { 
-            color: #0066cc;
-            text-decoration: none;
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 28px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
-        a:hover { text-decoration: underline; }
-        .container {
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        main {
             max-width: 1200px;
-            margin: 0 auto;
+            margin: 20px auto 60px;
+            padding: 0 20px;
         }
-        .sl-column {
-            width: 50px;
-            text-align: center;
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
         }
-        .sort-button {
-            background: none;
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-description {
+            margin: 6px 0 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            background: #fff;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .muted {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+
+        button {
             border: none;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            padding: 0 5px;
+            transition: transform 0.1s ease, box-shadow 0.2s ease;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .secondary {
+            background: var(--muted);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .error {
+            color: var(--danger);
+            background: #fef2f2;
+            border: 1px solid #fecdd3;
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .dashboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .dashboard-table th,
+        .dashboard-table td {
+            border-bottom: 1px solid var(--border);
+            padding: 10px;
+            text-align: left;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 600;
             font-size: 12px;
         }
-        .sort-button:hover {
-            color: #0066cc;
+
+        .status-pill.running { background: #dbeafe; color: #1d4ed8; }
+        .status-pill.queued { background: #fef9c3; color: #92400e; }
+        .status-pill.completed { background: #dcfce7; color: #166534; }
+
+        .progress {
+            position: relative;
+            width: 100%;
+            height: 10px;
+            background: var(--muted);
+            border-radius: 999px;
+            overflow: hidden;
         }
-        .applied-column {
-            width: 70px;
-            text-align: center;
+
+        .progress span {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            background: var(--primary);
+            transition: width 0.3s ease;
         }
-        .tick {
-            color: #4CAF50;
-            font-weight: bold;
+
+        .applied-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        .applied-table th, .applied-table td {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: left;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            background: var(--muted);
+            border-radius: 8px;
+            font-size: 12px;
+            margin-right: 6px;
+        }
+
+        @media (max-width: 700px) {
+            header {
+                position: static;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Applied Jobs History</h1>
-        <table id="jobsTable">
+<header>
+    <h1>Job Automation Control Center</h1>
+    <p class="muted">Configure new runs, keep drafts, and monitor real-time execution.</p>
+</header>
+<main>
+    <div id="error" class="error" style="display:none;"></div>
+
+    <div class="grid">
+        <section class="card" id="personal-section">
+            <h2>👤 Personal Details</h2>
+            <p class="section-description">Share the essentials that populate applications and outreach.</p>
+            <div class="form-row">
+                <div>
+                    <label for="fullName">Full name *</label>
+                    <input type="text" id="fullName" required>
+                </div>
+                <div>
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="phone">Phone *</label>
+                    <input type="tel" id="phone" required>
+                </div>
+                <div>
+                    <label for="location">Current location *</label>
+                    <input type="text" id="location" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="resume">Resume URL *</label>
+                    <input type="url" id="resume" placeholder="https://..." required>
+                </div>
+                <div>
+                    <label for="portfolio">Portfolio</label>
+                    <input type="url" id="portfolio" placeholder="Optional">
+                </div>
+            </div>
+            <label for="summary">Professional summary</label>
+            <textarea id="summary" placeholder="Tailor your pitch for this run"></textarea>
+        </section>
+
+        <section class="card" id="screening-section">
+            <h2>🧭 Screening Questions</h2>
+            <p class="section-description">Answer standard employer questions to speed up submissions.</p>
+            <div class="form-row">
+                <div>
+                    <label for="workAuth">Work authorization *</label>
+                    <select id="workAuth" required>
+                        <option value="">Select</option>
+                        <option>Authorized to work</option>
+                        <option>Requires sponsorship</option>
+                        <option>Not authorized</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="relocate">Open to relocation *</label>
+                    <select id="relocate" required>
+                        <option value="">Select</option>
+                        <option>Yes</option>
+                        <option>No</option>
+                        <option>Case by case</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="experience">Years of experience *</label>
+                    <input type="number" id="experience" min="0" max="50" required>
+                </div>
+                <div>
+                    <label for="education">Highest education *</label>
+                    <select id="education" required>
+                        <option value="">Select</option>
+                        <option>Bachelor's</option>
+                        <option>Master's</option>
+                        <option>PhD</option>
+                        <option>Bootcamp</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+            </div>
+            <label for="availability">Availability *</label>
+            <input type="text" id="availability" placeholder="e.g., 2 weeks notice" required>
+            <label for="screeningNotes">Additional details</label>
+            <textarea id="screeningNotes" placeholder="Certifications, security clearance, salary expectations"></textarea>
+        </section>
+    </div>
+
+    <div class="grid">
+        <section class="card" id="filters-section">
+            <h2>🔍 Search Filters</h2>
+            <p class="section-description">Tune the targeting logic for this automation run.</p>
+            <label for="keywords">Keywords *</label>
+            <input type="text" id="keywords" placeholder="e.g., Python, data engineering" required>
+            <div class="form-row">
+                <div>
+                    <label for="cities">Preferred locations *</label>
+                    <input type="text" id="cities" placeholder="City or Remote" required>
+                </div>
+                <div>
+                    <label for="radius">Search radius (miles)</label>
+                    <input type="number" id="radius" min="0" max="100">
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="salaryMin">Salary min</label>
+                    <input type="number" id="salaryMin" min="0" step="1000">
+                </div>
+                <div>
+                    <label for="salaryMax">Salary max</label>
+                    <input type="number" id="salaryMax" min="0" step="1000">
+                </div>
+            </div>
+            <label for="filtersNotes">Roles to avoid</label>
+            <textarea id="filtersNotes" placeholder="Exclude titles, industries, or shift types"></textarea>
+        </section>
+
+        <section class="card" id="parameters-section">
+            <h2>⚙️ Job Run Parameters</h2>
+            <p class="section-description">Control how the automation behaves for this batch.</p>
+            <div class="form-row">
+                <div>
+                    <label for="dailyCap">Daily application cap *</label>
+                    <input type="number" id="dailyCap" min="1" max="500" required>
+                </div>
+                <div>
+                    <label for="applyMode">Apply mode *</label>
+                    <select id="applyMode" required>
+                        <option value="">Select</option>
+                        <option>Easy apply only</option>
+                        <option>External + easy apply</option>
+                        <option>External only</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="coverLetters">Generate cover letters</label>
+                    <select id="coverLetters">
+                        <option>Yes, tailor per role</option>
+                        <option>Only for senior roles</option>
+                        <option>No cover letters</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="interval">Run interval (minutes)</label>
+                    <input type="number" id="interval" min="5" step="5" value="30">
+                </div>
+            </div>
+            <label for="notes">Notes to operator</label>
+            <textarea id="notes" placeholder="Clarify constraints or messaging" ></textarea>
+            <div class="actions">
+                <button class="secondary" id="saveDraft">Save draft</button>
+                <button class="danger" id="clearDraft">Clear draft</button>
+                <button class="primary" id="submit">Start job run</button>
+            </div>
+        </section>
+    </div>
+
+    <section class="card" id="dashboard-section">
+        <h2>📈 Run Dashboard</h2>
+        <p class="section-description">Active and queued runs update automatically every few seconds.</p>
+        <table class="dashboard-table" id="runsTable">
             <thead>
                 <tr>
-                    <th class="sl-column">Sl No</th>
-                    <th>Job Title</th>
-                    <th>Company</th>  
-                    <th>HR Contact</th>
-                    <th>
-                        External Link
-                        <button class="sort-button" onclick="sortByExternalLink()">↕️</button>
-                    </th> 
-                    <th class="applied-column">Applied</th>
+                    <th>ID</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Keywords</th>
+                    <th>Locations</th>
+                    <th>Created</th>
                 </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <section class="card" id="history-section">
+        <h2>📜 Applied Jobs History</h2>
+        <p class="section-description">Quick reference for recent applications with external links.</p>
+        <table class="applied-table" id="jobsTable">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Job Title</th>
+                <th>Company</th>
+                <th>HR Contact</th>
+                <th>External Link</th>
+                <th>Applied</th>
+            </tr>
             </thead>
             <tbody id="jobsBody"></tbody>
         </table>
-    </div>
+    </section>
+</main>
 
-    <script>
-        let sortOrder = 'asc';
-        let jobsData = [];
-        let appliedJobs = new Set();
+<script>
+    const DRAFT_KEY = 'job-automation-draft';
+    const errorBox = document.getElementById('error');
 
-        // Replace the createTableRow function with this updated version
-        function createTableRow(job, index) {
-            const row = document.createElement('tr');
-            
-            // Serial Number
-            const slCell = document.createElement('td');
-            slCell.textContent = index + 1;
-            slCell.className = 'sl-column';
-            row.appendChild(slCell);
-            
-            // Job Title with link
-            const titleCell = document.createElement('td');
-            const titleLink = document.createElement('a');
-            titleLink.href = job.Job_Link;
-            titleLink.textContent = job.Title;
-            titleLink.target = '_blank';
-            titleCell.appendChild(titleLink);
-            row.appendChild(titleCell);
-            
-            // Company
-            const companyCell = document.createElement('td');
-            companyCell.textContent = job.Company;
-            row.appendChild(companyCell);
-            
-            // HR Name with link
-            const hrCell = document.createElement('td');
-            if (job.HR_Name && job.HR_Name !== 'Unknown') {
-                const hrLink = document.createElement('a');
-                hrLink.href = job.HR_Link;
-                hrLink.textContent = job.HR_Name;
-                hrLink.target = '_blank';
-                hrCell.appendChild(hrLink);
-            } else {
-                hrCell.textContent = 'N/A';
+    function showError(message) {
+        errorBox.textContent = message;
+        errorBox.style.display = 'block';
+    }
+
+    function clearError() {
+        errorBox.textContent = '';
+        errorBox.style.display = 'none';
+    }
+
+    function getFormData() {
+        return {
+            personal: {
+                fullName: document.getElementById('fullName').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                location: document.getElementById('location').value.trim(),
+                resume: document.getElementById('resume').value.trim(),
+                portfolio: document.getElementById('portfolio').value.trim(),
+                summary: document.getElementById('summary').value.trim(),
+            },
+            screening: {
+                workAuth: document.getElementById('workAuth').value,
+                relocate: document.getElementById('relocate').value,
+                experience: document.getElementById('experience').value,
+                education: document.getElementById('education').value,
+                availability: document.getElementById('availability').value.trim(),
+                notes: document.getElementById('screeningNotes').value.trim(),
+            },
+            filters: {
+                keywords: document.getElementById('keywords').value.trim(),
+                locations: document.getElementById('cities').value.trim(),
+                radius: document.getElementById('radius').value,
+                salaryMin: document.getElementById('salaryMin').value,
+                salaryMax: document.getElementById('salaryMax').value,
+                avoid: document.getElementById('filtersNotes').value.trim(),
+            },
+            parameters: {
+                dailyCap: document.getElementById('dailyCap').value,
+                applyMode: document.getElementById('applyMode').value,
+                coverLetters: document.getElementById('coverLetters').value,
+                interval: document.getElementById('interval').value,
+                notes: document.getElementById('notes').value.trim(),
             }
-            row.appendChild(hrCell);
-            
-            // External Job Link
-            const extCell = document.createElement('td');
-            const appliedCell = document.createElement('td');
-            appliedCell.className = 'applied-column';
+        };
+    }
 
-            if (job.External_Job_link === 'Easy Applied') {
-                extCell.textContent = 'Easy Applied';
-                appliedCell.innerHTML = '<span class="tick">✓</span>';
-            } else if (job.External_Job_link) {
-                const extLink = document.createElement('a');
-                extLink.href = job.External_Job_link;
-                extLink.textContent = 'External Link';
-                extLink.target = '_blank';
-                
-                // Add click handler for external link
-                extLink.addEventListener('click', async () => {
-                    try {
-                        const response = await fetch(`/applied-jobs/${job.Job_ID}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            appliedCell.innerHTML = '<span class="tick">✓</span>';
-                            job.Date_Applied = new Date().toISOString();
-                        }
-                    } catch (error) {
-                        console.error('Error updating applied date:', error);
-                    }
-                });
-                
-                extCell.appendChild(extLink);
-                // Show tick if already applied
-                if (job.Date_Applied !== 'Pending') {
-                    appliedCell.innerHTML = '<span class="tick">✓</span>';
-                }
-            } else {
-                extCell.textContent = 'N/A';
-            }
-            row.appendChild(extCell);
-            row.appendChild(appliedCell);
-            
-            return row;
+    function populateForm(data) {
+        if (!data) return;
+        const { personal = {}, screening = {}, filters = {}, parameters = {} } = data;
+        document.getElementById('fullName').value = personal.fullName || '';
+        document.getElementById('email').value = personal.email || '';
+        document.getElementById('phone').value = personal.phone || '';
+        document.getElementById('location').value = personal.location || '';
+        document.getElementById('resume').value = personal.resume || '';
+        document.getElementById('portfolio').value = personal.portfolio || '';
+        document.getElementById('summary').value = personal.summary || '';
+
+        document.getElementById('workAuth').value = screening.workAuth || '';
+        document.getElementById('relocate').value = screening.relocate || '';
+        document.getElementById('experience').value = screening.experience || '';
+        document.getElementById('education').value = screening.education || '';
+        document.getElementById('availability').value = screening.availability || '';
+        document.getElementById('screeningNotes').value = screening.notes || '';
+
+        document.getElementById('keywords').value = filters.keywords || '';
+        document.getElementById('cities').value = filters.locations || '';
+        document.getElementById('radius').value = filters.radius || '';
+        document.getElementById('salaryMin').value = filters.salaryMin || '';
+        document.getElementById('salaryMax').value = filters.salaryMax || '';
+        document.getElementById('filtersNotes').value = filters.avoid || '';
+
+        document.getElementById('dailyCap').value = parameters.dailyCap || '';
+        document.getElementById('applyMode').value = parameters.applyMode || '';
+        document.getElementById('coverLetters').value = parameters.coverLetters || 'Yes, tailor per role';
+        document.getElementById('interval').value = parameters.interval || '30';
+        document.getElementById('notes').value = parameters.notes || '';
+    }
+
+    function validateForm(data) {
+        const requiredFields = [
+            ['personal.fullName', data.personal.fullName],
+            ['personal.email', data.personal.email],
+            ['personal.phone', data.personal.phone],
+            ['personal.location', data.personal.location],
+            ['personal.resume', data.personal.resume],
+            ['screening.workAuth', data.screening.workAuth],
+            ['screening.relocate', data.screening.relocate],
+            ['screening.experience', data.screening.experience],
+            ['screening.education', data.screening.education],
+            ['screening.availability', data.screening.availability],
+            ['filters.keywords', data.filters.keywords],
+            ['filters.locations', data.filters.locations],
+            ['parameters.dailyCap', data.parameters.dailyCap],
+            ['parameters.applyMode', data.parameters.applyMode],
+        ];
+
+        const missing = requiredFields.filter(([, value]) => !value);
+        if (missing.length) {
+            showError(`Please complete the required fields: ${missing.map(m => m[0]).join(', ')}`);
+            return false;
         }
 
-        function sortByExternalLink() {
-            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-            
-            jobsData.sort((a, b) => {
-                const valueA = a.External_Job_link || '';
-                const valueB = b.External_Job_link || '';
-                
-                if (sortOrder === 'asc') {
-                    return valueA.localeCompare(valueB);
-                } else {
-                    return valueB.localeCompare(valueA);
+        if (!data.personal.email.includes('@')) {
+            showError('Provide a valid email address.');
+            return false;
+        }
+
+        clearError();
+        return true;
+    }
+
+    function saveDraft() {
+        const data = getFormData();
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+    }
+
+    function loadDraft() {
+        const draft = localStorage.getItem(DRAFT_KEY);
+        if (draft) {
+            populateForm(JSON.parse(draft));
+        }
+    }
+
+    function clearDraft() {
+        localStorage.removeItem(DRAFT_KEY);
+        populateForm({});
+    }
+
+    async function submitRun() {
+        const data = getFormData();
+        if (!validateForm(data)) return;
+
+        try {
+            const response = await fetch('/job-runs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create job run');
+            }
+
+            await response.json();
+            saveDraft();
+            fetchRuns();
+        } catch (error) {
+            showError(error.message);
+        }
+    }
+
+    function buildProgress(progress) {
+        return `<div class="progress"><span style="width:${progress}%"></span></div>`;
+    }
+
+    function buildStatus(status) {
+        return `<span class="status-pill ${status}">${status}</span>`;
+    }
+
+    function renderRuns(runs) {
+        const tbody = document.querySelector('#runsTable tbody');
+        tbody.innerHTML = '';
+        runs.forEach((run) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${run.id}</td>
+                <td>${buildStatus(run.status)}</td>
+                <td>${buildProgress(run.progress || 0)}</td>
+                <td>${(run.filters?.keywords || '').split(',').map(k => k && `<span class="tag">${k.trim()}</span>`).join(' ')}</td>
+                <td>${run.filters?.locations || ''}</td>
+                <td>${new Date(run.created_at).toLocaleString()}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    async function fetchRuns() {
+        try {
+            const response = await fetch('/job-runs');
+            const runs = await response.json();
+            renderRuns(runs);
+        } catch (e) {
+            console.error('Failed to load runs', e);
+        }
+    }
+
+    function createTableRow(job, index) {
+        const row = document.createElement('tr');
+
+        const slCell = document.createElement('td');
+        slCell.textContent = index + 1;
+        row.appendChild(slCell);
+
+        const titleCell = document.createElement('td');
+        const titleLink = document.createElement('a');
+        titleLink.href = job.Job_Link;
+        titleLink.textContent = job.Title;
+        titleLink.target = '_blank';
+        titleCell.appendChild(titleLink);
+        row.appendChild(titleCell);
+
+        const companyCell = document.createElement('td');
+        companyCell.textContent = job.Company;
+        row.appendChild(companyCell);
+
+        const hrCell = document.createElement('td');
+        if (job.HR_Name && job.HR_Name !== 'Unknown') {
+            const hrLink = document.createElement('a');
+            hrLink.href = job.HR_Link;
+            hrLink.textContent = job.HR_Name;
+            hrLink.target = '_blank';
+            hrCell.appendChild(hrLink);
+        } else {
+            hrCell.textContent = 'N/A';
+        }
+        row.appendChild(hrCell);
+
+        const extCell = document.createElement('td');
+        const appliedCell = document.createElement('td');
+
+        if (job.External_Job_link === 'Easy Applied') {
+            extCell.textContent = 'Easy Applied';
+            appliedCell.innerHTML = '<span class="status-pill completed">✓</span>';
+        } else if (job.External_Job_link) {
+            const extLink = document.createElement('a');
+            extLink.href = job.External_Job_link;
+            extLink.textContent = 'External Link';
+            extLink.target = '_blank';
+
+            extLink.addEventListener('click', async () => {
+                try {
+                    const response = await fetch(`/applied-jobs/${job.Job_ID}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        appliedCell.innerHTML = '<span class="status-pill completed">✓</span>';
+                        job.Date_Applied = new Date().toISOString();
+                    }
+                } catch (error) {
+                    console.error('Error updating applied date:', error);
                 }
             });
-            
+
+            extCell.appendChild(extLink);
+            if (job.Date_Applied !== 'Pending') {
+                appliedCell.innerHTML = '<span class="status-pill completed">✓</span>';
+            }
+        } else {
+            extCell.textContent = 'N/A';
+        }
+        row.appendChild(extCell);
+        row.appendChild(appliedCell);
+
+        return row;
+    }
+
+    async function loadAppliedJobs() {
+        try {
+            const response = await fetch('/applied-jobs');
+            const jobs = await response.json();
             const tbody = document.getElementById('jobsBody');
             tbody.innerHTML = '';
-            jobsData.forEach((job, index) => {
+            jobs.forEach((job, index) => {
                 tbody.appendChild(createTableRow(job, index));
             });
+        } catch (error) {
+            console.error('Error:', error);
         }
+    }
 
-        fetch('http://localhost:5000/applied-jobs')
-            .then(response => response.json())
-            .then(jobs => {
-                jobsData = jobs;
-                const tbody = document.getElementById('jobsBody');
-                jobs.forEach((job, index) => {
-                    tbody.appendChild(createTableRow(job, index));
-                });
-            })
-            .catch(error => console.error('Error:', error));
-    </script>
+    // Event bindings
+    document.getElementById('saveDraft').addEventListener('click', (e) => {
+        e.preventDefault();
+        saveDraft();
+    });
+
+    document.getElementById('clearDraft').addEventListener('click', (e) => {
+        e.preventDefault();
+        clearDraft();
+    });
+
+    document.getElementById('submit').addEventListener('click', (e) => {
+        e.preventDefault();
+        submitRun();
+    });
+
+    // Auto-save drafts when fields change
+    Array.from(document.querySelectorAll('input, textarea, select')).forEach((el) => {
+        el.addEventListener('change', saveDraft);
+    });
+
+    loadDraft();
+    loadAppliedJobs();
+    fetchRuns();
+    setInterval(fetchRuns, 5000);
+</script>
 </body>
 </html>
-
-<!-- ##< -->
