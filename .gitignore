@@ -11,3 +11,7 @@ secrets.py
 config/personals.py
 .venv
 apikeys.py
+terraform.tfstate
+terraform.tfstate.backup
+.terraform/
+*.tfvars

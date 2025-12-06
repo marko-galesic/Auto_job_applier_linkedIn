@@ -1,0 +1,7 @@
+# Copy this file to terraform.tfvars and set project-specific values.
+render_api_key = "replace-with-render-api-key"
+service_name   = "auto-job-applier-ui"
+service_plan   = "starter"
+region         = "oregon"
+repo_url       = "https://github.com/GodsScion/Auto_job_applier_linkedIn"
+branch         = "main"
