@@ -33,3 +33,9 @@ variable "branch" {
   type        = string
   default     = "main"
 }
+
+variable "application_history_dir" {
+  description = "Directory where the application stores the applied jobs history CSV."
+  type        = string
+  default     = "all excels"
+}

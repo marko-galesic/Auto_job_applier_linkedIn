@@ -51,11 +51,19 @@
             color: #4CAF50;
             font-weight: bold;
         }
+        .status {
+            margin-top: 10px;
+            color: #555;
+        }
+        .error {
+            color: #c0392b;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Applied Jobs History</h1>
+        <p id="statusMessage" class="status"></p>
         <table id="jobsTable">
             <thead>
                 <tr>
@@ -78,6 +86,7 @@
         let sortOrder = 'asc';
         let jobsData = [];
         let appliedJobs = new Set();
+        const statusMessage = document.getElementById('statusMessage');
 
         // Replace the createTableRow function with this updated version
         function createTableRow(job, index) {
@@ -184,16 +193,38 @@
             });
         }
 
-        fetch('http://localhost:5000/applied-jobs')
-            .then(response => response.json())
-            .then(jobs => {
+        async function loadJobs() {
+            try {
+                const response = await fetch('/applied-jobs');
+
+                if (!response.ok) {
+                    throw new Error('Request failed');
+                }
+
+                const jobs = await response.json();
                 jobsData = jobs;
                 const tbody = document.getElementById('jobsBody');
+                tbody.innerHTML = '';
+
+                if (!jobs.length) {
+                    statusMessage.textContent = 'No applications have been logged yet.';
+                    statusMessage.classList.remove('error');
+                    return;
+                }
+
+                statusMessage.textContent = '';
+                statusMessage.classList.remove('error');
                 jobs.forEach((job, index) => {
                     tbody.appendChild(createTableRow(job, index));
                 });
-            })
-            .catch(error => console.error('Error:', error));
+            } catch (error) {
+                console.error('Error:', error);
+                statusMessage.textContent = 'Unable to load applied jobs right now. Please try again later.';
+                statusMessage.classList.add('error');
+            }
+        }
+
+        loadJobs();
     </script>
 </body>
 </html>
