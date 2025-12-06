@@ -29,24 +29,19 @@ resource "render_web_service" "auto_job_ui" {
     }
   }
 
-  service_details = {
-    env           = "python"
-    build_command = "pip install --upgrade pip && pip install -r requirements.txt"
-    start_command = "gunicorn app:app --bind 0.0.0.0:$PORT"
-  }
+  env           = "python"
+  build_command = "pip install --upgrade pip && pip install -r requirements.txt"
+  start_command = "gunicorn app:app --bind 0.0.0.0:$PORT"
 
-  env_vars = [
-    {
-      key   = "FLASK_ENV"
+  env_vars = {
+    FLASK_ENV = {
       value = "production"
-    },
-    {
-      key   = "FLASK_DEBUG"
+    }
+    FLASK_DEBUG = {
       value = "false"
-    },
-    {
-      key   = "APPLICATION_HISTORY_DIR"
+    }
+    APPLICATION_HISTORY_DIR = {
       value = var.application_history_dir
-    },
-  ]
+    }
+  }
 }
