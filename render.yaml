@@ -15,3 +15,5 @@ services:
         value: production
       - key: FLASK_DEBUG
         value: "false"
+      - key: APPLICATION_HISTORY_DIR
+        value: "all excels"

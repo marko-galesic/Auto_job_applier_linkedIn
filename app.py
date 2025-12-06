@@ -133,7 +133,12 @@ def get_applied_jobs():
 
     try:
         jobs = []
-        with open(PATH + 'all_applied_applications_history.csv', 'r', encoding='utf-8') as file:
+        csv_path = get_history_csv_path()
+
+        if not os.path.exists(csv_path):
+            return jsonify(jobs)
+
+        with open(csv_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             for row in reader:
                 jobs.append({
@@ -147,8 +152,6 @@ def get_applied_jobs():
                     'Date_Applied': row['Date Applied']
                 })
         return jsonify(jobs)
-    except FileNotFoundError:
-        return jsonify({"error": "No applications history found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -168,30 +171,30 @@ def update_applied_date(job_id):
     """
     try:
         data = []
-        csvPath = PATH + 'all_applied_applications_history.csv'
-        
-        if not os.path.exists(csvPath):
-            return jsonify({"error": f"CSV file not found at {csvPath}"}), 404
-            
+        csv_path = get_history_csv_path()
+
+        if not os.path.exists(csv_path):
+            return jsonify({"error": f"CSV file not found at {csv_path}"}), 404
+
         # Read current CSV content
-        with open(csvPath, 'r', encoding='utf-8') as file:
+        with open(csv_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
-            fieldNames = reader.fieldnames
+            field_names = reader.fieldnames
             found = False
             for row in reader:
                 if row['Job ID'] == job_id:
                     row['Date Applied'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     found = True
                 data.append(row)
-        
+
         if not found:
             return jsonify({"error": f"Job ID {job_id} not found"}), 404
 
-        with open(csvPath, 'w', encoding='utf-8', newline='') as file:
-            writer = csv.DictWriter(file, fieldnames=fieldNames)
+        with open(csv_path, 'w', encoding='utf-8', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=field_names)
             writer.writeheader()
             writer.writerows(data)
-        
+
         return jsonify({"message": "Date Applied updated successfully"}), 200
     except Exception as e:
         print(f"Error updating applied date: {str(e)}")  # Debug log

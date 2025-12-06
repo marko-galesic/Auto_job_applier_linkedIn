@@ -39,4 +39,9 @@ resource "render_web_service" "auto_job_ui" {
     key   = "FLASK_DEBUG"
     value = "false"
   }
+
+  env_vars {
+    key   = "APPLICATION_HISTORY_DIR"
+    value = var.application_history_dir
+  }
 }
