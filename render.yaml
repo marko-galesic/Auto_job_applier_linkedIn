@@ -5,8 +5,8 @@ services:
     plan: starter
     branch: main
     region: oregon
-    repo: https://github.com/GodsScion/Auto_job_applier_linkedIn
-    buildCommand: pip install -r requirements.txt
+    repo: https://github.com/marko-galesic/Auto_job_applier_linkedIn
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     autoDeploy: true
     healthCheckPath: /
