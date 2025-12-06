@@ -2,10 +2,14 @@ terraform {
   required_version = ">= 1.5.0"
 
   required_providers {
-    # Pin to the 1.4.x schema to match the existing configuration.
+    # Pin to the exact provider version that matches this configuration to
+    # avoid Terraform downloading a different schema on new runners. The CI
+    # flakiness we were seeing (alternating "unsupported block" vs "unsupported
+    # argument" errors) is consistent with Terraform grabbing different
+    # versions of the Render provider on different runs.
     render = {
       source  = "render-oss/render"
-      version = ">= 1.4.0, < 1.5.0"
+      version = "1.4.0"
     }
   }
 }
@@ -19,9 +23,11 @@ resource "render_web_service" "auto_job_ui" {
   plan   = var.service_plan
   region = var.region
 
-  env           = "python"
-  build_command = "pip install --upgrade pip && pip install -r requirements.txt"
-  start_command = "gunicorn app:app --bind 0.0.0.0:$PORT"
+  service_details {
+    env           = "python"
+    build_command = "pip install --upgrade pip && pip install -r requirements.txt"
+    start_command = "gunicorn app:app --bind 0.0.0.0:$PORT"
+  }
 
   runtime_source = {
     type = "REPO"
