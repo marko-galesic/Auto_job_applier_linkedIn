@@ -25,7 +25,7 @@ variable "region" {
 variable "repo_url" {
   description = "Repository URL Render should deploy from."
   type        = string
-  default     = "https://github.com/GodsScion/Auto_job_applier_linkedIn"
+  default     = "https://github.com/marko-galesic/Auto_job_applier_linkedIn"
 }
 
 variable "branch" {
