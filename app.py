@@ -3,11 +3,19 @@ from flask_cors import CORS
 import csv
 from datetime import datetime
 import os
+from typing import Any, Dict
+
+from modules.job_store import JobStore
+from modules.job_worker import JobWorker
 
 app = Flask(__name__)
 CORS(app)
 
 PATH = 'all excels/'
+JOBS_DB_PATH = os.getenv('JOBS_DB_PATH', os.path.join('data', 'jobs.db'))
+
+job_store = JobStore(JOBS_DB_PATH)
+job_worker = JobWorker(job_store)
 ##> ------ Karthik Sarode : karthik.sarode23@gmail.com - UI for excel files ------
 @app.route('/')
 def home():
@@ -90,6 +98,64 @@ def update_applied_date(job_id):
         return jsonify({"message": "Date Applied updated successfully"}), 200
     except Exception as e:
         print(f"Error updating applied date: {str(e)}")  # Debug log
+        return jsonify({"error": str(e)}), 500
+
+
+def _validate_job_payload(body: Dict[str, Any]) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {}
+    for key in ("personals", "questions", "search_filters"):
+        if key in body:
+            if not isinstance(body[key], (dict, list)):
+                raise ValueError(f"'{key}' must be an object or list")
+            payload[key] = body[key]
+    return payload
+
+
+@app.route('/jobs', methods=['POST'])
+def create_job():
+    try:
+        body = request.get_json(force=True, silent=True) or {}
+        payload = _validate_job_payload(body)
+        job_id = job_store.create_job(payload)
+        job_worker.enqueue(job_id)
+        return jsonify({"id": job_id, "status": "queued"}), 202
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/jobs', methods=['GET'])
+def list_jobs():
+    jobs = job_store.list_jobs()
+    return jsonify(jobs), 200
+
+
+@app.route('/jobs/<job_id>', methods=['GET'])
+def get_job(job_id):
+    job = job_store.get_job(job_id)
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+    return jsonify(job), 200
+
+
+@app.route('/jobs/<job_id>', methods=['PATCH'])
+def update_job(job_id):
+    try:
+        body = request.get_json(force=True, silent=True) or {}
+        payload_updates = _validate_job_payload(body)
+        job = job_store.update_payload(job_id, payload_updates)
+        if not job:
+            return jsonify({"error": "Job not found"}), 404
+        if body.get("restart", False):
+            job_store.update_status(job_id, status="queued", progress=0)
+            job_worker.enqueue(job_id)
+            job["status"] = "queued"
+            job["progress"] = 0
+        return jsonify(job), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
