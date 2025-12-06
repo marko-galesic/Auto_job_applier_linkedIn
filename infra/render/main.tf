@@ -2,9 +2,9 @@ terraform {
   required_version = ">= 1.5.0"
 
   required_providers {
+    # Pin to the 1.4.x schema to match the existing configuration.
     render = {
       source  = "render-oss/render"
-      # Pin to the 1.4.x schema to match the existing configuration.
       version = ">= 1.4.0, < 1.5.0"
     }
   }
@@ -19,30 +19,29 @@ resource "render_web_service" "auto_job_ui" {
   plan   = var.service_plan
   region = var.region
 
-  repo {
-    branch      = var.branch
-    repo        = var.repo_url
-    auto_deploy = true
+  env           = "python"
+  build_command = "pip install --upgrade pip && pip install -r requirements.txt"
+  start_command = "gunicorn app:app --bind 0.0.0.0:$PORT"
+
+  runtime_source {
+    type = "REPO"
+
+    repo {
+      branch      = var.branch
+      repo        = var.repo_url
+      auto_deploy = true
+    }
   }
 
-  service_details {
-    env           = "python"
-    build_command = "pip install --upgrade pip && pip install -r requirements.txt"
-    start_command = "gunicorn app:app --bind 0.0.0.0:$PORT"
-  }
-
-  env_vars {
-    key   = "FLASK_ENV"
-    value = "production"
-  }
-
-  env_vars {
-    key   = "FLASK_DEBUG"
-    value = "false"
-  }
-
-  env_vars {
-    key   = "APPLICATION_HISTORY_DIR"
-    value = var.application_history_dir
+  env_vars = {
+    FLASK_ENV = {
+      value = "production"
+    }
+    FLASK_DEBUG = {
+      value = "false"
+    }
+    APPLICATION_HISTORY_DIR = {
+      value = var.application_history_dir
+    }
   }
 }
