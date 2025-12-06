@@ -23,9 +23,11 @@ resource "render_web_service" "auto_job_ui" {
   plan   = var.service_plan
   region = var.region
 
-  env           = "python"
-  build_command = "pip install --upgrade pip && pip install -r requirements.txt"
-  start_command = "gunicorn app:app --bind 0.0.0.0:$PORT"
+  service_details {
+    env           = "python"
+    build_command = "pip install --upgrade pip && pip install -r requirements.txt"
+    start_command = "gunicorn app:app --bind 0.0.0.0:$PORT"
+  }
 
   runtime_source = {
     type = "REPO"
