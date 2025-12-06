@@ -51,11 +51,24 @@
             color: #4CAF50;
             font-weight: bold;
         }
+
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .status-error {
+            background-color: #ffe6e6;
+            border: 1px solid #ff4d4d;
+            color: #b30000;
+        }
     </style>
 </head>
-<body>
+<body data-api-base-url="{{ api_base_url }}">
     <div class="container">
         <h1>Applied Jobs History</h1>
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
         <table id="jobsTable">
             <thead>
                 <tr>
@@ -78,6 +91,25 @@
         let sortOrder = 'asc';
         let jobsData = [];
         let appliedJobs = new Set();
+        const apiBaseUrl = (document.body.dataset.apiBaseUrl || '').replace(/\/$/, '');
+
+        function apiUrl(path) {
+            return `${apiBaseUrl}${path}`;
+        }
+
+        function showStatusMessage(message) {
+            const statusElement = document.getElementById('statusMessage');
+            if (!message) {
+                statusElement.style.display = 'none';
+                statusElement.textContent = '';
+                statusElement.className = 'status-message';
+                return;
+            }
+
+            statusElement.textContent = message;
+            statusElement.className = 'status-message status-error';
+            statusElement.style.display = 'block';
+        }
 
         // Replace the createTableRow function with this updated version
         function createTableRow(job, index) {
@@ -133,19 +165,22 @@
                 // Add click handler for external link
                 extLink.addEventListener('click', async () => {
                     try {
-                        const response = await fetch(`/applied-jobs/${job.Job_ID}`, {
+                        const response = await fetch(apiUrl(`/applied-jobs/${job.Job_ID}`), {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json'
                             }
                         });
-                        
+
                         if (response.ok) {
                             appliedCell.innerHTML = '<span class="tick">✓</span>';
                             job.Date_Applied = new Date().toISOString();
+                        } else {
+                            showStatusMessage('Unable to update application status. Please try again.');
                         }
                     } catch (error) {
                         console.error('Error updating applied date:', error);
+                        showStatusMessage('Network error while updating the job status. Please check your connection.');
                     }
                 });
                 
@@ -184,16 +219,25 @@
             });
         }
 
-        fetch('http://localhost:5000/applied-jobs')
-            .then(response => response.json())
+        fetch(apiUrl('/applied-jobs'))
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`API responded with status ${response.status}`);
+                }
+                return response.json();
+            })
             .then(jobs => {
                 jobsData = jobs;
                 const tbody = document.getElementById('jobsBody');
                 jobs.forEach((job, index) => {
                     tbody.appendChild(createTableRow(job, index));
                 });
+                showStatusMessage('');
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error:', error);
+                showStatusMessage('Unable to load jobs. Please check the API health or your network connection.');
+            });
     </script>
 </body>
 </html>
