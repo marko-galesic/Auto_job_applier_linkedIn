@@ -4,7 +4,8 @@ terraform {
   required_providers {
     render = {
       source  = "render-oss/render"
-      version = "~> 1.4"
+      # Pin to the 1.4.x schema to match the existing configuration.
+      version = ">= 1.4.0, < 1.5.0"
     }
   }
 }
