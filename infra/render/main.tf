@@ -24,14 +24,16 @@ resource "render_web_service" "auto_job_ui" {
 
     repo = {
       branch      = var.branch
-      repo        = var.repo_url
+      url         = var.repo_url
       auto_deploy = true
     }
   }
 
-  env           = "python"
-  build_command = "pip install --upgrade pip && pip install -r requirements.txt"
-  start_command = "gunicorn app:app --bind 0.0.0.0:$PORT"
+  service_details {
+    env           = "python"
+    build_command = "pip install --upgrade pip && pip install -r requirements.txt"
+    start_command = "gunicorn app:app --bind 0.0.0.0:$PORT"
+  }
 
   env_vars = {
     FLASK_ENV = {
