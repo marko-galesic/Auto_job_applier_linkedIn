@@ -2,9 +2,9 @@ terraform {
   required_version = ">= 1.5.0"
 
   required_providers {
+    # Pin to the 1.4.x schema to match the existing configuration.
     render = {
       source  = "render-oss/render"
-      # Pin to the 1.4.x schema to match the existing configuration.
       version = ">= 1.4.0, < 1.5.0"
     }
   }
