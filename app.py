@@ -11,7 +11,9 @@ from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+
+allowed_origin = os.getenv("ALLOWED_ORIGIN") or os.getenv("RENDER_EXTERNAL_URL") or "*"
+CORS(app, resources={r"/*": {"origins": allowed_origin}}, methods=["GET", "PUT", "OPTIONS"])
 
 PATH = 'all excels/'
 JOBS_DB_PATH = os.getenv('JOBS_DB_PATH', os.path.join('data', 'jobs.db'))
@@ -80,7 +82,8 @@ def refresh_job_runs(job_runs):
 @app.route('/')
 def home():
     """Displays the home page of the application."""
-    return render_template('index.html')
+    api_base_url = (os.getenv("API_BASE_URL") or "").rstrip("/")
+    return render_template('index.html', api_base_url=api_base_url)
 
 
 @app.route('/job-runs', methods=['GET'])
