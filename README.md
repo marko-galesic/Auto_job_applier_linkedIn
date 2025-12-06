@@ -13,6 +13,7 @@ Click on above image to watch the demo or use this link https://youtu.be/gMbB1fW
 - [Index](#-content)
 - [Install](#%EF%B8%8F-how-to-install)
 - [Configure](#-how-to-configure)
+- [Deploy](#-deploying-to-render-with-terraform)
 - [Contributor Guidelines](#‍-contributor-guidelines)
 - [Updates](%EF%B8%8F-major-updates-history)
 - [Disclaimer](#-disclaimer)
@@ -56,6 +57,18 @@ Click on above image to watch the tutorial for installation and configuration or
 7. Run `runAiBot.py` and see the magic happen.
 8. To run the Applied Jobs history UI, run `app.py` and open web browser on `http://localhost:5000`.
 8. If you have questions or need help setting it up or to talk in general, join the github server: https://discord.gg/fFp7uUzWCY
+
+[back to index](#-content)
+
+<br>
+
+## 🚀 Deploying to Render with Terraform
+Render hosting is now codified so pushes to the `main` branch trigger an automated deployment.
+
+1. Copy `infra/render/terraform.tfvars.example` to `infra/render/terraform.tfvars` and adjust the values if you want to change the service name, plan, or branch. The defaults already target this repository and the `main` branch.
+2. Create a Render API key (Dashboard → Account Settings → API Keys) and add it as a GitHub Actions secret named `RENDER_API_KEY`.
+3. Optional: run `terraform plan` / `terraform apply` locally from `infra/render` to create the service before the first push. The provided `render.yaml` mirrors the service definition used by Terraform and can be imported directly in Render if you prefer a one-time manual bootstrap.
+4. When changes land on `main`, the `Deploy to Render` workflow under `.github/workflows/render-deploy.yml` runs `terraform plan` and `terraform apply` to keep the Render service in sync. The service uses `gunicorn app:app --bind 0.0.0.0:$PORT` so Render health checks and port binding succeed by default.
 
 [back to index](#-content)
 

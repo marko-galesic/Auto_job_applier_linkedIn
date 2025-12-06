@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: auto-job-applier-ui
+    env: python
+    plan: starter
+    branch: main
+    region: oregon
+    repo: https://github.com/GodsScion/Auto_job_applier_linkedIn
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "false"

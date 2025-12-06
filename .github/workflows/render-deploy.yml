@@ -1,0 +1,59 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  TF_IN_AUTOMATION: true
+  TF_LOG: INFO
+
+jobs:
+  terraform:
+    name: Provision Render service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/render
+    env:
+      TF_VAR_render_api_key: ${{ secrets.RENDER_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Restore Terraform state
+        uses: actions/download-artifact@v4
+        with:
+          name: render-terraform-state
+          path: infra/render
+        continue-on-error: true
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Terraform fmt
+        run: terraform fmt -check
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
+
+      - name: Persist Terraform state
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-terraform-state
+          path: infra/render/terraform.tfstate
