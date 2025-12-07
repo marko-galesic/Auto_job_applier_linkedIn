@@ -18,8 +18,14 @@ provider "render" {
   api_key = var.render_api_key
 }
 
+locals {
+  # Ensure service names stay unique across Terraform workspaces to avoid
+  # clashes with any manually created Render services using the same base name.
+  rendered_service_name = "${var.service_name}-${terraform.workspace}"
+}
+
 resource "render_web_service" "auto_job_ui" {
-  name   = var.service_name
+  name   = local.rendered_service_name
   plan   = var.service_plan
   region = var.region
 
