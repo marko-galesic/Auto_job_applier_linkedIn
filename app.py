@@ -3,9 +3,10 @@ import json
 import os
 from typing import Any, Dict
 
+from datetime import datetime, timezone
 from modules.job_store import JobStore
 from modules.job_worker import JobWorker
-from datetime import datetime, timezone
+from werkzeug.utils import secure_filename
 
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
@@ -13,10 +14,12 @@ from flask_cors import CORS
 app = Flask(__name__)
 
 allowed_origin = os.getenv("ALLOWED_ORIGIN") or os.getenv("RENDER_EXTERNAL_URL") or "*"
-CORS(app, resources={r"/*": {"origins": allowed_origin}}, methods=["GET", "PUT", "OPTIONS"])
+CORS(app, resources={r"/*": {"origins": allowed_origin}}, methods=["GET", "PUT", "POST", "OPTIONS"])
 
 PATH = 'all excels/'
 JOBS_DB_PATH = os.getenv('JOBS_DB_PATH', os.path.join('data', 'jobs.db'))
+RESUME_UPLOAD_PATH = os.getenv('DEFAULT_RESUME_PATH', os.path.join('all resumes', 'uploaded', 'resume.pdf'))
+ALLOWED_RESUME_EXTENSIONS = {'.pdf', '.doc', '.docx'}
 
 job_store = JobStore(JOBS_DB_PATH)
 job_worker = JobWorker(job_store)
@@ -38,6 +41,20 @@ def save_job_runs(job_runs):
     """Persist job runs to the JSON file."""
     with open(JOB_RUNS_FILE, 'w', encoding='utf-8') as file:
         json.dump(job_runs, file, indent=2)
+
+
+def _ensure_resume_directory():
+    os.makedirs(os.path.dirname(RESUME_UPLOAD_PATH), exist_ok=True)
+
+
+def _validate_resume_file(upload):
+    if not upload or upload.filename == '':
+        return "No resume file uploaded"
+
+    extension = os.path.splitext(upload.filename)[1].lower()
+    if extension not in ALLOWED_RESUME_EXTENSIONS:
+        return f"Unsupported file type. Allowed: {', '.join(sorted(ALLOWED_RESUME_EXTENSIONS))}"
+    return None
 
 
 def refresh_job_runs(job_runs):
@@ -119,6 +136,28 @@ def create_job_run():
     save_job_runs(job_runs)
 
     return jsonify(new_run), 201
+
+
+@app.route('/upload-resume', methods=['POST'])
+def upload_resume():
+    """Accept and persist a resume for the automation worker to reuse."""
+    upload = request.files.get('file')
+    validation_error = _validate_resume_file(upload)
+    if validation_error:
+        return jsonify({"error": validation_error}), 400
+
+    _ensure_resume_directory()
+    extension = os.path.splitext(upload.filename)[1].lower()
+    destination_filename = f"resume{extension}"
+    destination_path = os.path.join(os.path.dirname(RESUME_UPLOAD_PATH), secure_filename(destination_filename))
+
+    upload.save(destination_path)
+
+    return jsonify({
+        "message": "Resume uploaded successfully",
+        "path": destination_path,
+        "filename": destination_filename,
+    }), 201
 
 @app.route('/applied-jobs', methods=['GET'])
 def get_applied_jobs():

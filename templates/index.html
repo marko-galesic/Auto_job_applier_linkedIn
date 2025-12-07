@@ -494,8 +494,9 @@
                 </div>
                 <div class="form-row">
                     <div>
-                        <label for="resume">Resume URL *</label>
-                        <input type="url" id="resume" placeholder="https://..." required>
+                        <label for="resumeFile">Resume *</label>
+                        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" required>
+                        <p class="muted" id="resumeStatus">No file uploaded</p>
                     </div>
                     <div>
                         <label for="portfolio">Portfolio</label>
@@ -561,6 +562,8 @@
     const SELECTED_PROFILE_KEY = 'job-automation-profile-selected';
     const errorBox = document.getElementById('error');
     const profileStatus = document.getElementById('profileStatus');
+    const resumeStatus = document.getElementById('resumeStatus');
+    let resumePath = '';
 
     function showError(message) {
         errorBox.textContent = message;
@@ -574,6 +577,11 @@
 
     function showProfileStatus(message) {
         profileStatus.textContent = message;
+    }
+
+    function setResumeStatus(message, path = '') {
+        resumeStatus.textContent = message;
+        resumePath = path;
     }
 
     function loadProfiles() {
@@ -621,6 +629,23 @@
         ).trim();
     }
 
+    async function uploadResume(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/upload-resume', {
+            method: 'POST',
+            body: formData
+        });
+
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.error || 'Failed to upload resume');
+        }
+
+        setResumeStatus(`Uploaded: ${payload.filename}`, payload.path);
+    }
+
     function getFormData() {
         return {
             profileName: getSelectedProfileName(),
@@ -629,7 +654,7 @@
                 email: document.getElementById('email').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
                 location: document.getElementById('location').value.trim(),
-                resume: document.getElementById('resume').value.trim(),
+                resume: resumePath,
                 portfolio: document.getElementById('portfolio').value.trim(),
                 summary: document.getElementById('summary').value.trim(),
             },
@@ -669,7 +694,7 @@
         document.getElementById('email').value = personal.email || '';
         document.getElementById('phone').value = personal.phone || '';
         document.getElementById('location').value = personal.location || '';
-        document.getElementById('resume').value = personal.resume || '';
+        setResumeStatus(personal.resume ? `Using uploaded resume` : 'No file uploaded', personal.resume || '');
         document.getElementById('portfolio').value = personal.portfolio || '';
         document.getElementById('summary').value = personal.summary || '';
 
@@ -1004,6 +1029,19 @@
     document.getElementById('saveDraft').addEventListener('click', (e) => {
         e.preventDefault();
         saveDraft();
+    });
+
+    document.getElementById('resumeFile').addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            await uploadResume(file);
+            clearError();
+        } catch (error) {
+            setResumeStatus('No file uploaded');
+            showError(error.message);
+        }
     });
 
     document.getElementById('saveProfile').addEventListener('click', (e) => {
