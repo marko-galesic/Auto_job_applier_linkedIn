@@ -12,6 +12,7 @@ env:
 jobs:
   terraform:
     name: Provision Render service
+    environment: prod
     runs-on: ubuntu-latest
     defaults:
       run:
