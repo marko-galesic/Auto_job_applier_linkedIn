@@ -1,0 +1,10 @@
+{
+  "name": "auto-job-applier-linkedin",
+  "version": "1.0.0",
+  "description": "Build helper for Render: installs Python dependencies and provides a no-op frontend build.",
+  "scripts": {
+    "postinstall": "pip install --upgrade pip && pip install -r requirements.txt",
+    "build": "echo \"No frontend assets to build for this Python service.\""
+  },
+  "license": "MIT"
+}
