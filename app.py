@@ -108,6 +108,7 @@ def create_job_run():
         'created_at': now,
         'started_at': None,
         'completed_at': None,
+        'profile_name': payload.get('profileName'),
         'personal': payload.get('personal', {}),
         'screening': payload.get('screening', {}),
         'filters': payload.get('filters', {}),
