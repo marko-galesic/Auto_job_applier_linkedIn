@@ -275,6 +275,36 @@
         .error {
             color: #c0392b;
         }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .tab-button {
+            background: var(--muted);
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text);
+        }
+        .tab-button.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.15);
+        }
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+        .inline-muted {
+            margin: 0;
+            color: var(--text-muted);
+        }
     </style>
 </head>
 <body>
@@ -285,218 +315,244 @@
 <main>
     <div id="error" class="error" style="display:none;"></div>
 
-    <div class="grid">
-        <section class="card" id="personal-section">
-            <h2>👤 Personal Details</h2>
-            <p class="section-description">Share the essentials that populate applications and outreach.</p>
-            <div class="profile-toolbar">
+    <div class="tabs">
+        <button class="tab-button active" data-tab="launch">🚀 Launch Jobs</button>
+        <button class="tab-button" data-tab="profiles">👤 Manage Profiles</button>
+    </div>
+
+    <div class="tab-panel active" data-tab="launch">
+        <section class="card" id="launch-profile-card">
+            <h2>🎯 Choose Profile</h2>
+            <p class="section-description">Pick which saved profile to use when launching applications.</p>
+            <div class="form-row">
                 <div>
-                    <label for="profileName">Profile name</label>
-                    <input type="text" id="profileName" placeholder="e.g., US SWE" aria-label="Profile name">
-                </div>
-                <div>
-                    <label for="profilePicker">Load existing profile</label>
-                    <select id="profilePicker">
+                    <label for="launchProfilePicker">Active profile *</label>
+                    <select id="launchProfilePicker">
                         <option value="">Select a profile</option>
                     </select>
                 </div>
                 <div>
-                    <button class="secondary" id="saveProfile">Save profile</button>
-                </div>
-                <div>
-                    <button class="danger" id="deleteProfile">Delete</button>
+                    <label>&nbsp;</label>
+                    <p class="inline-muted">Create or edit profiles from the Manage Profiles tab.</p>
                 </div>
             </div>
-            <p class="muted profile-note" id="profileStatus"></p>
-            <div class="form-row">
-                <div>
-                    <label for="fullName">Full name *</label>
-                    <input type="text" id="fullName" required>
-                </div>
-                <div>
-                    <label for="email">Email *</label>
-                    <input type="email" id="email" required>
-                </div>
-            </div>
-            <div class="form-row">
-                <div>
-                    <label for="phone">Phone *</label>
-                    <input type="tel" id="phone" required>
-                </div>
-                <div>
-                    <label for="location">Current location *</label>
-                    <input type="text" id="location" required>
-                </div>
-            </div>
-            <div class="form-row">
-                <div>
-                    <label for="resume">Resume URL *</label>
-                    <input type="url" id="resume" placeholder="https://..." required>
-                </div>
-                <div>
-                    <label for="portfolio">Portfolio</label>
-                    <input type="url" id="portfolio" placeholder="Optional">
-                </div>
-            </div>
-            <label for="summary">Professional summary</label>
-            <textarea id="summary" placeholder="Tailor your pitch for this run"></textarea>
         </section>
 
-        <section class="card" id="screening-section">
-            <h2>🧭 Screening Questions</h2>
-            <p class="section-description">Answer standard employer questions to speed up submissions.</p>
-            <div class="form-row">
-                <div>
-                    <label for="workAuth">Work authorization *</label>
-                    <select id="workAuth" required>
-                        <option value="">Select</option>
-                        <option>Authorized to work</option>
-                        <option>Requires sponsorship</option>
-                        <option>Not authorized</option>
-                    </select>
+        <div class="grid">
+            <section class="card" id="filters-section">
+                <h2>🔍 Search Filters</h2>
+                <p class="section-description">Tune the targeting logic for this automation run.</p>
+                <label for="keywords">Keywords *</label>
+                <input type="text" id="keywords" placeholder="e.g., Python, data engineering" required>
+                <div class="form-row">
+                    <div>
+                        <label for="cities">Preferred locations *</label>
+                        <input type="text" id="cities" placeholder="City or Remote" required>
+                    </div>
+                    <div>
+                        <label for="radius">Search radius (miles)</label>
+                        <input type="number" id="radius" min="0" max="100">
+                    </div>
                 </div>
-                <div>
-                    <label for="relocate">Open to relocation *</label>
-                    <select id="relocate" required>
-                        <option value="">Select</option>
-                        <option>Yes</option>
-                        <option>No</option>
-                        <option>Case by case</option>
-                    </select>
+                <div class="form-row">
+                    <div>
+                        <label for="salaryMin">Salary min</label>
+                        <input type="number" id="salaryMin" min="0" step="1000">
+                    </div>
+                    <div>
+                        <label for="salaryMax">Salary max</label>
+                        <input type="number" id="salaryMax" min="0" step="1000">
+                    </div>
                 </div>
-            </div>
-            <div class="form-row">
-                <div>
-                    <label for="experience">Years of experience *</label>
-                    <input type="number" id="experience" min="0" max="50" required>
-                </div>
-                <div>
-                    <label for="education">Highest education *</label>
-                    <select id="education" required>
-                        <option value="">Select</option>
-                        <option>Bachelor's</option>
-                        <option>Master's</option>
-                        <option>PhD</option>
-                        <option>Bootcamp</option>
-                        <option>Other</option>
-                    </select>
-                </div>
-            </div>
-            <label for="availability">Availability *</label>
-            <input type="text" id="availability" placeholder="e.g., 2 weeks notice" required>
-            <label for="screeningNotes">Additional details</label>
-            <textarea id="screeningNotes" placeholder="Certifications, security clearance, salary expectations"></textarea>
-        </section>
-    </div>
+                <label for="filtersNotes">Roles to avoid</label>
+                <textarea id="filtersNotes" placeholder="Exclude titles, industries, or shift types"></textarea>
+            </section>
 
-    <div class="grid">
-        <section class="card" id="filters-section">
-            <h2>🔍 Search Filters</h2>
-            <p class="section-description">Tune the targeting logic for this automation run.</p>
-            <label for="keywords">Keywords *</label>
-            <input type="text" id="keywords" placeholder="e.g., Python, data engineering" required>
-            <div class="form-row">
-                <div>
-                    <label for="cities">Preferred locations *</label>
-                    <input type="text" id="cities" placeholder="City or Remote" required>
+            <section class="card" id="parameters-section">
+                <h2>⚙️ Job Run Parameters</h2>
+                <p class="section-description">Control how the automation behaves for this batch.</p>
+                <div class="form-row">
+                    <div>
+                        <label for="dailyCap">Daily application cap *</label>
+                        <input type="number" id="dailyCap" min="1" max="500" required>
+                    </div>
+                    <div>
+                        <label for="applyMode">Apply mode *</label>
+                        <select id="applyMode" required>
+                            <option value="">Select</option>
+                            <option>Easy apply only</option>
+                            <option>External + easy apply</option>
+                            <option>External only</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label for="radius">Search radius (miles)</label>
-                    <input type="number" id="radius" min="0" max="100">
+                <div class="form-row">
+                    <div>
+                        <label for="coverLetters">Generate cover letters</label>
+                        <select id="coverLetters">
+                            <option>Yes, tailor per role</option>
+                            <option>Only for senior roles</option>
+                            <option>No cover letters</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="interval">Run interval (minutes)</label>
+                        <input type="number" id="interval" min="5" step="5" value="30">
+                    </div>
                 </div>
-            </div>
-            <div class="form-row">
-                <div>
-                    <label for="salaryMin">Salary min</label>
-                    <input type="number" id="salaryMin" min="0" step="1000">
+                <label for="notes">Notes to operator</label>
+                <textarea id="notes" placeholder="Clarify constraints or messaging" ></textarea>
+                <div class="actions">
+                    <button class="secondary" id="saveDraft">Save draft</button>
+                    <button class="danger" id="clearDraft">Clear draft</button>
+                    <button class="primary" id="submit">Start job run</button>
                 </div>
-                <div>
-                    <label for="salaryMax">Salary max</label>
-                    <input type="number" id="salaryMax" min="0" step="1000">
-                </div>
-            </div>
-            <label for="filtersNotes">Roles to avoid</label>
-            <textarea id="filtersNotes" placeholder="Exclude titles, industries, or shift types"></textarea>
+            </section>
+        </div>
+
+        <section class="card" id="dashboard-section">
+            <h2>📈 Run Dashboard</h2>
+            <p class="section-description">Active and queued runs update automatically every few seconds.</p>
+            <table class="dashboard-table" id="runsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Profile</th>
+                        <th>Keywords</th>
+                        <th>Locations</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </section>
 
-        <section class="card" id="parameters-section">
-            <h2>⚙️ Job Run Parameters</h2>
-            <p class="section-description">Control how the automation behaves for this batch.</p>
-            <div class="form-row">
-                <div>
-                    <label for="dailyCap">Daily application cap *</label>
-                    <input type="number" id="dailyCap" min="1" max="500" required>
-                </div>
-                <div>
-                    <label for="applyMode">Apply mode *</label>
-                    <select id="applyMode" required>
-                        <option value="">Select</option>
-                        <option>Easy apply only</option>
-                        <option>External + easy apply</option>
-                        <option>External only</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-row">
-                <div>
-                    <label for="coverLetters">Generate cover letters</label>
-                    <select id="coverLetters">
-                        <option>Yes, tailor per role</option>
-                        <option>Only for senior roles</option>
-                        <option>No cover letters</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="interval">Run interval (minutes)</label>
-                    <input type="number" id="interval" min="5" step="5" value="30">
-                </div>
-            </div>
-            <label for="notes">Notes to operator</label>
-            <textarea id="notes" placeholder="Clarify constraints or messaging" ></textarea>
-            <div class="actions">
-                <button class="secondary" id="saveDraft">Save draft</button>
-                <button class="danger" id="clearDraft">Clear draft</button>
-                <button class="primary" id="submit">Start job run</button>
-            </div>
-        </section>
-    </div>
-
-    <section class="card" id="dashboard-section">
-        <h2>📈 Run Dashboard</h2>
-        <p class="section-description">Active and queued runs update automatically every few seconds.</p>
-        <table class="dashboard-table" id="runsTable">
-            <thead>
+        <section class="card" id="history-section">
+            <h2>📜 Applied Jobs History</h2>
+            <p class="section-description">Quick reference for recent applications with external links.</p>
+            <table class="applied-table" id="jobsTable">
+                <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Status</th>
-                    <th>Progress</th>
-                    <th>Profile</th>
-                    <th>Keywords</th>
-                    <th>Locations</th>
-                    <th>Created</th>
+                    <th>#</th>
+                    <th>Job Title</th>
+                    <th>Company</th>
+                    <th>HR Contact</th>
+                    <th>External Link</th>
+                    <th>Applied</th>
                 </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </section>
+                </thead>
+                <tbody id="jobsBody"></tbody>
+            </table>
+        </section>
+    </div>
 
-    <section class="card" id="history-section">
-        <h2>📜 Applied Jobs History</h2>
-        <p class="section-description">Quick reference for recent applications with external links.</p>
-        <table class="applied-table" id="jobsTable">
-            <thead>
-            <tr>
-                <th>#</th>
-                <th>Job Title</th>
-                <th>Company</th>
-                <th>HR Contact</th>
-                <th>External Link</th>
-                <th>Applied</th>
-            </tr>
-            </thead>
-            <tbody id="jobsBody"></tbody>
-        </table>
-    </section>
+    <div class="tab-panel" data-tab="profiles">
+        <div class="grid">
+            <section class="card" id="personal-section">
+                <h2>👤 Personal Details</h2>
+                <p class="section-description">Share the essentials that populate applications and outreach.</p>
+                <div class="profile-toolbar">
+                    <div>
+                        <label for="profileName">Profile name</label>
+                        <input type="text" id="profileName" placeholder="e.g., US SWE" aria-label="Profile name">
+                    </div>
+                    <div>
+                        <label for="profilePicker">Load existing profile</label>
+                        <select id="profilePicker">
+                            <option value="">Select a profile</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button class="secondary" id="saveProfile">Save profile</button>
+                    </div>
+                    <div>
+                        <button class="danger" id="deleteProfile">Delete</button>
+                    </div>
+                </div>
+                <p class="muted profile-note" id="profileStatus"></p>
+                <div class="form-row">
+                    <div>
+                        <label for="fullName">Full name *</label>
+                        <input type="text" id="fullName" required>
+                    </div>
+                    <div>
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="phone">Phone *</label>
+                        <input type="tel" id="phone" required>
+                    </div>
+                    <div>
+                        <label for="location">Current location *</label>
+                        <input type="text" id="location" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="resume">Resume URL *</label>
+                        <input type="url" id="resume" placeholder="https://..." required>
+                    </div>
+                    <div>
+                        <label for="portfolio">Portfolio</label>
+                        <input type="url" id="portfolio" placeholder="Optional">
+                    </div>
+                </div>
+                <label for="summary">Professional summary</label>
+                <textarea id="summary" placeholder="Tailor your pitch for this run"></textarea>
+            </section>
+
+            <section class="card" id="screening-section">
+                <h2>🧭 Screening Questions</h2>
+                <p class="section-description">Answer standard employer questions to speed up submissions.</p>
+                <div class="form-row">
+                    <div>
+                        <label for="workAuth">Work authorization *</label>
+                        <select id="workAuth" required>
+                            <option value="">Select</option>
+                            <option>Authorized to work</option>
+                            <option>Requires sponsorship</option>
+                            <option>Not authorized</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="relocate">Open to relocation *</label>
+                        <select id="relocate" required>
+                            <option value="">Select</option>
+                            <option>Yes</option>
+                            <option>No</option>
+                            <option>Case by case</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="experience">Years of experience *</label>
+                        <input type="number" id="experience" min="0" max="50" required>
+                    </div>
+                    <div>
+                        <label for="education">Highest education *</label>
+                        <select id="education" required>
+                            <option value="">Select</option>
+                            <option>Bachelor's</option>
+                            <option>Master's</option>
+                            <option>PhD</option>
+                            <option>Bootcamp</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                </div>
+                <label for="availability">Availability *</label>
+                <input type="text" id="availability" placeholder="e.g., 2 weeks notice" required>
+                <label for="screeningNotes">Additional details</label>
+                <textarea id="screeningNotes" placeholder="Certifications, security clearance, salary expectations"></textarea>
+            </section>
+        </div>
+    </div>
 </main>
 
 <script>
@@ -536,23 +592,38 @@
     }
 
     function refreshProfileOptions(selectedProfile = '') {
-        const select = document.getElementById('profilePicker');
         const profiles = loadProfiles();
-        select.innerHTML = '<option value="">Select a profile</option>';
-        Object.keys(profiles).sort().forEach((name) => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            if (name === selectedProfile) {
-                option.selected = true;
-            }
-            select.appendChild(option);
+        const selects = ['profilePicker', 'launchProfilePicker']
+            .map((id) => document.getElementById(id))
+            .filter(Boolean);
+
+        selects.forEach((select) => {
+            select.innerHTML = '<option value="">Select a profile</option>';
+            Object.keys(profiles).sort().forEach((name) => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                if (name === selectedProfile) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
         });
+    }
+
+    function getSelectedProfileName() {
+        const launchPicker = document.getElementById('launchProfilePicker');
+        const managePicker = document.getElementById('profilePicker');
+        const profileInput = document.getElementById('profileName');
+
+        return (
+            (launchPicker?.value || managePicker?.value || profileInput?.value || '')
+        ).trim();
     }
 
     function getFormData() {
         return {
-            profileName: document.getElementById('profilePicker').value || document.getElementById('profileName').value.trim(),
+            profileName: getSelectedProfileName(),
             personal: {
                 fullName: document.getElementById('fullName').value.trim(),
                 email: document.getElementById('email').value.trim(),
@@ -593,6 +664,7 @@
         const { profileName = '', personal = {}, screening = {}, filters = {}, parameters = {} } = data;
         document.getElementById('profileName').value = profileName || '';
         refreshProfileOptions(profileName);
+        syncProfileSelection(profileName);
         document.getElementById('fullName').value = personal.fullName || '';
         document.getElementById('email').value = personal.email || '';
         document.getElementById('phone').value = personal.phone || '';
@@ -672,12 +744,27 @@
         populateForm({});
     }
 
+    function syncProfileSelection(profileName) {
+        ['profilePicker', 'launchProfilePicker'].forEach((id) => {
+            const select = document.getElementById(id);
+            if (select) {
+                select.value = profileName || '';
+            }
+        });
+
+        const profileNameInput = document.getElementById('profileName');
+        if (profileNameInput && profileNameInput.value !== profileName) {
+            profileNameInput.value = profileName || '';
+        }
+    }
+
     function rememberSelectedProfile(profileName) {
         if (profileName) {
             localStorage.setItem(SELECTED_PROFILE_KEY, profileName);
         } else {
             localStorage.removeItem(SELECTED_PROFILE_KEY);
         }
+        syncProfileSelection(profileName);
     }
 
     function applyProfileToForm(profile, profileName) {
@@ -711,9 +798,10 @@
         showProfileStatus(`Saved profile "${profileName}".`);
     }
 
-    function loadSelectedProfile() {
-        const picker = document.getElementById('profilePicker');
-        const profileName = picker.value;
+    function loadSelectedProfile(sourceId) {
+        const picker = document.getElementById(sourceId) || document.getElementById('launchProfilePicker') || document.getElementById('profilePicker');
+        const profileName = picker?.value || '';
+        syncProfileSelection(profileName);
         if (!profileName) {
             rememberSelectedProfile('');
             showProfileStatus('');
@@ -902,6 +990,16 @@
         }
     }
 
+    function activateTab(tabName) {
+        document.querySelectorAll('.tab-button').forEach((button) => {
+            button.classList.toggle('active', button.dataset.tab === tabName);
+        });
+
+        document.querySelectorAll('.tab-panel').forEach((panel) => {
+            panel.classList.toggle('active', panel.dataset.tab === tabName);
+        });
+    }
+
     // Event bindings
     document.getElementById('saveDraft').addEventListener('click', (e) => {
         e.preventDefault();
@@ -919,7 +1017,11 @@
     });
 
     document.getElementById('profilePicker').addEventListener('change', () => {
-        loadSelectedProfile();
+        loadSelectedProfile('profilePicker');
+    });
+
+    document.getElementById('launchProfilePicker').addEventListener('change', () => {
+        loadSelectedProfile('launchProfilePicker');
     });
 
     document.getElementById('clearDraft').addEventListener('click', (e) => {
@@ -937,20 +1039,25 @@
         el.addEventListener('change', saveDraft);
     });
 
-    refreshProfileOptions(localStorage.getItem(SELECTED_PROFILE_KEY) || '');
+    document.querySelectorAll('.tab-button').forEach((button) => {
+        button.addEventListener('click', () => activateTab(button.dataset.tab));
+    });
+
+    const savedProfile = localStorage.getItem(SELECTED_PROFILE_KEY) || '';
+    refreshProfileOptions(savedProfile);
+    syncProfileSelection(savedProfile);
     loadDraft();
 
-    const savedProfile = localStorage.getItem(SELECTED_PROFILE_KEY);
     if (savedProfile) {
         const profiles = loadProfiles();
         const profile = profiles[savedProfile];
         const current = getFormData();
         if (profile && !current.personal.fullName) {
-            document.getElementById('profilePicker').value = savedProfile;
-            document.getElementById('profileName').value = savedProfile;
             applyProfileToForm(profile, savedProfile);
         }
     }
+
+    activateTab('launch');
     loadAppliedJobs();
     fetchRuns();
     setInterval(fetchRuns, 5000);
