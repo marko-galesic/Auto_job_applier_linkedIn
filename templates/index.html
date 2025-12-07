@@ -247,6 +247,22 @@
             border-radius: 4px;
         }
 
+        .profile-toolbar {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr auto auto;
+            gap: 10px;
+            align-items: end;
+            margin-bottom: 14px;
+        }
+
+        .profile-toolbar button {
+            width: 100%;
+        }
+
+        .profile-note {
+            margin: 6px 0 2px;
+        }
+
         .status-error {
             background-color: #ffe6e6;
             border: 1px solid #ff4d4d;
@@ -273,6 +289,25 @@
         <section class="card" id="personal-section">
             <h2>👤 Personal Details</h2>
             <p class="section-description">Share the essentials that populate applications and outreach.</p>
+            <div class="profile-toolbar">
+                <div>
+                    <label for="profileName">Profile name</label>
+                    <input type="text" id="profileName" placeholder="e.g., US SWE" aria-label="Profile name">
+                </div>
+                <div>
+                    <label for="profilePicker">Load existing profile</label>
+                    <select id="profilePicker">
+                        <option value="">Select a profile</option>
+                    </select>
+                </div>
+                <div>
+                    <button class="secondary" id="saveProfile">Save profile</button>
+                </div>
+                <div>
+                    <button class="danger" id="deleteProfile">Delete</button>
+                </div>
+            </div>
+            <p class="muted profile-note" id="profileStatus"></p>
             <div class="form-row">
                 <div>
                     <label for="fullName">Full name *</label>
@@ -435,6 +470,7 @@
                     <th>ID</th>
                     <th>Status</th>
                     <th>Progress</th>
+                    <th>Profile</th>
                     <th>Keywords</th>
                     <th>Locations</th>
                     <th>Created</th>
@@ -465,7 +501,10 @@
 
 <script>
     const DRAFT_KEY = 'job-automation-draft';
+    const PROFILES_KEY = 'job-automation-profiles';
+    const SELECTED_PROFILE_KEY = 'job-automation-profile-selected';
     const errorBox = document.getElementById('error');
+    const profileStatus = document.getElementById('profileStatus');
 
     function showError(message) {
         errorBox.textContent = message;
@@ -477,8 +516,43 @@
         errorBox.style.display = 'none';
     }
 
+    function showProfileStatus(message) {
+        profileStatus.textContent = message;
+    }
+
+    function loadProfiles() {
+        const stored = localStorage.getItem(PROFILES_KEY);
+        if (!stored) return {};
+        try {
+            return JSON.parse(stored);
+        } catch (error) {
+            console.error('Failed to parse profiles', error);
+            return {};
+        }
+    }
+
+    function saveProfiles(profiles) {
+        localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+    }
+
+    function refreshProfileOptions(selectedProfile = '') {
+        const select = document.getElementById('profilePicker');
+        const profiles = loadProfiles();
+        select.innerHTML = '<option value="">Select a profile</option>';
+        Object.keys(profiles).sort().forEach((name) => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            if (name === selectedProfile) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    }
+
     function getFormData() {
         return {
+            profileName: document.getElementById('profilePicker').value || document.getElementById('profileName').value.trim(),
             personal: {
                 fullName: document.getElementById('fullName').value.trim(),
                 email: document.getElementById('email').value.trim(),
@@ -516,7 +590,9 @@
 
     function populateForm(data) {
         if (!data) return;
-        const { personal = {}, screening = {}, filters = {}, parameters = {} } = data;
+        const { profileName = '', personal = {}, screening = {}, filters = {}, parameters = {} } = data;
+        document.getElementById('profileName').value = profileName || '';
+        refreshProfileOptions(profileName);
         document.getElementById('fullName').value = personal.fullName || '';
         document.getElementById('email').value = personal.email || '';
         document.getElementById('phone').value = personal.phone || '';
@@ -596,6 +672,89 @@
         populateForm({});
     }
 
+    function rememberSelectedProfile(profileName) {
+        if (profileName) {
+            localStorage.setItem(SELECTED_PROFILE_KEY, profileName);
+        } else {
+            localStorage.removeItem(SELECTED_PROFILE_KEY);
+        }
+    }
+
+    function applyProfileToForm(profile, profileName) {
+        const current = getFormData();
+        populateForm({
+            profileName: profileName || current.profileName,
+            personal: profile.personal || {},
+            screening: profile.screening || {},
+            filters: current.filters,
+            parameters: current.parameters,
+        });
+    }
+
+    function saveProfile() {
+        const profileName = document.getElementById('profileName').value.trim();
+        if (!profileName) {
+            showError('Enter a profile name before saving.');
+            return;
+        }
+
+        const data = getFormData();
+        const profiles = loadProfiles();
+        profiles[profileName] = {
+            personal: data.personal,
+            screening: data.screening,
+        };
+        saveProfiles(profiles);
+        rememberSelectedProfile(profileName);
+        refreshProfileOptions(profileName);
+        clearError();
+        showProfileStatus(`Saved profile "${profileName}".`);
+    }
+
+    function loadSelectedProfile() {
+        const picker = document.getElementById('profilePicker');
+        const profileName = picker.value;
+        if (!profileName) {
+            rememberSelectedProfile('');
+            showProfileStatus('');
+            return;
+        }
+
+        const profiles = loadProfiles();
+        const profile = profiles[profileName];
+        if (!profile) {
+            showError('Profile not found.');
+            return;
+        }
+
+        rememberSelectedProfile(profileName);
+        applyProfileToForm(profile, profileName);
+        clearError();
+        showProfileStatus(`Loaded profile "${profileName}".`);
+    }
+
+    function deleteProfile() {
+        const picker = document.getElementById('profilePicker');
+        const profileName = picker.value;
+        const profiles = loadProfiles();
+
+        if (!profileName) {
+            showError('Select a profile to delete.');
+            return;
+        }
+
+        if (!profiles[profileName]) {
+            showError('Profile not found.');
+            return;
+        }
+
+        delete profiles[profileName];
+        saveProfiles(profiles);
+        rememberSelectedProfile('');
+        refreshProfileOptions();
+        showProfileStatus(`Deleted profile "${profileName}".`);
+    }
+
     async function submitRun() {
         const data = getFormData();
         if (!validateForm(data)) return;
@@ -636,6 +795,7 @@
                 <td>${run.id}</td>
                 <td>${buildStatus(run.status)}</td>
                 <td>${buildProgress(run.progress || 0)}</td>
+                <td>${run.profile_name || ''}</td>
                 <td>${(run.filters?.keywords || '').split(',').map(k => k && `<span class="tag">${k.trim()}</span>`).join(' ')}</td>
                 <td>${run.filters?.locations || ''}</td>
                 <td>${new Date(run.created_at).toLocaleString()}</td>
@@ -748,6 +908,20 @@
         saveDraft();
     });
 
+    document.getElementById('saveProfile').addEventListener('click', (e) => {
+        e.preventDefault();
+        saveProfile();
+    });
+
+    document.getElementById('deleteProfile').addEventListener('click', (e) => {
+        e.preventDefault();
+        deleteProfile();
+    });
+
+    document.getElementById('profilePicker').addEventListener('change', () => {
+        loadSelectedProfile();
+    });
+
     document.getElementById('clearDraft').addEventListener('click', (e) => {
         e.preventDefault();
         clearDraft();
@@ -763,7 +937,20 @@
         el.addEventListener('change', saveDraft);
     });
 
+    refreshProfileOptions(localStorage.getItem(SELECTED_PROFILE_KEY) || '');
     loadDraft();
+
+    const savedProfile = localStorage.getItem(SELECTED_PROFILE_KEY);
+    if (savedProfile) {
+        const profiles = loadProfiles();
+        const profile = profiles[savedProfile];
+        const current = getFormData();
+        if (profile && !current.personal.fullName) {
+            document.getElementById('profilePicker').value = savedProfile;
+            document.getElementById('profileName').value = savedProfile;
+            applyProfileToForm(profile, savedProfile);
+        }
+    }
     loadAppliedJobs();
     fetchRuns();
     setInterval(fetchRuns, 5000);
