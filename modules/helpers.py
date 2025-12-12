@@ -109,19 +109,40 @@ def critical_error_log(possible_reason: str, stack_trace: Exception) -> None:
     print_lg(possible_reason, stack_trace, datetime.now(), from_critical=True)
 
 
+def _ensure_log_directory(path: str) -> None:
+    '''
+    Make sure the directory for the log file exists before attempting writes.
+    '''
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+
 def get_log_path():
     '''
-    Function to replace '//' with '/' for logs path
+    Function to replace '//' with '/' for logs path and ensure directory exists.
     '''
     try:
         path = logs_folder_path+"/log.txt"
-        return path.replace("//","/")
+        path = path.replace("//","/")
+        _ensure_log_directory(path)
+        return path
     except Exception as e:
-        critical_error_log("Failed getting log path! So assigning default logs path: './logs/log.txt'", e)
-        return "logs/log.txt"
+        print(
+            "[ALERT Failed Logging] Unable to prepare logs directory; using ./logs/log.txt",
+            file=sys.stderr,
+        )
+        print(e, file=sys.stderr)
+        fallback_path = "./logs/log.txt"
+        try:
+            _ensure_log_directory(fallback_path)
+        except Exception:
+            pass
+        return fallback_path
 
 
 __logs_file_path = get_log_path()
+_logging_error_reported = False
 
 
 def print_lg(*msgs: str | dict, end: str = "\n", pretty: bool = False, flush: bool = False, from_critical: bool = False) -> None:
@@ -129,15 +150,26 @@ def print_lg(*msgs: str | dict, end: str = "\n", pretty: bool = False, flush: bo
     Function to log and print. **Note that, `end` and `flush` parameters are ignored if `pretty = True`**
     '''
     try:
+        _ensure_log_directory(__logs_file_path)
         for message in msgs:
             pprint(message) if pretty else print(message, end=end, flush=flush)
             with open(__logs_file_path, 'a+', encoding="utf-8") as file:
                 file.write(str(message) + end)
     except Exception as e:
+        # Avoid recursive logging attempts when the log file is locked or unavailable.
+        global _logging_error_reported
         trail = f'Skipped saving this message: "{message}" to log.txt!' if from_critical else "We'll try one more time to log..."
-        gui_alert(f"log.txt in {logs_folder_path} is open or is occupied by another program! Please close it! {trail}", "Failed Logging")
+        if not _logging_error_reported:
+            _logging_error_reported = True
+            gui_alert(
+                f"log.txt in {logs_folder_path} is open or is occupied by another program! Please close it! {trail}",
+                "Failed Logging",
+            )
+            # Print a simplified alert to stderr as a fallback without re-entering print_lg.
+            print("[ALERT Failed Logging] Log file unavailable; falling back to stderr only.", file=sys.stderr)
         if not from_critical:
-            critical_error_log("Log.txt is open or is occupied by another program!", e)
+            # Surface the failure without attempting to log the exception again.
+            print(f"Log.txt is open or is occupied by another program! {e}", file=sys.stderr)
 #>
 
 
