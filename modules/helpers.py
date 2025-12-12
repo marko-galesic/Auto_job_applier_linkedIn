@@ -122,6 +122,7 @@ def get_log_path():
 
 
 __logs_file_path = get_log_path()
+_logging_error_reported = False
 
 
 def print_lg(*msgs: str | dict, end: str = "\n", pretty: bool = False, flush: bool = False, from_critical: bool = False) -> None:
@@ -134,10 +135,20 @@ def print_lg(*msgs: str | dict, end: str = "\n", pretty: bool = False, flush: bo
             with open(__logs_file_path, 'a+', encoding="utf-8") as file:
                 file.write(str(message) + end)
     except Exception as e:
+        # Avoid recursive logging attempts when the log file is locked or unavailable.
+        global _logging_error_reported
         trail = f'Skipped saving this message: "{message}" to log.txt!' if from_critical else "We'll try one more time to log..."
-        gui_alert(f"log.txt in {logs_folder_path} is open or is occupied by another program! Please close it! {trail}", "Failed Logging")
+        if not _logging_error_reported:
+            _logging_error_reported = True
+            gui_alert(
+                f"log.txt in {logs_folder_path} is open or is occupied by another program! Please close it! {trail}",
+                "Failed Logging",
+            )
+            # Print a simplified alert to stderr as a fallback without re-entering print_lg.
+            print("[ALERT Failed Logging] Log file unavailable; falling back to stderr only.", file=sys.stderr)
         if not from_critical:
-            critical_error_log("Log.txt is open or is occupied by another program!", e)
+            # Surface the failure without attempting to log the exception again.
+            print(f"Log.txt is open or is occupied by another program! {e}", file=sys.stderr)
 #>
 
 
