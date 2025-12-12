@@ -141,6 +141,16 @@ def get_log_path():
         return fallback_path
 
 
+def get_chromedriver_log_path() -> str:
+    '''
+    Return the expected ChromeDriver verbose log path and ensure the directory exists.
+    '''
+    path = os.path.join(logs_folder_path, "chromedriver.log")
+    path = path.replace("//", "/")
+    _ensure_log_directory(path)
+    return path
+
+
 __logs_file_path = get_log_path()
 _logging_error_reported = False
 
