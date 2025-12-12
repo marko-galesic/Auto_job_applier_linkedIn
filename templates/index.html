@@ -919,7 +919,7 @@
         runs.forEach((run) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${run.id}</td>
+                <td><a href="/job-runs/${run.id}/view">${run.id}</a></td>
                 <td>${buildStatus(run.status)}</td>
                 <td>${buildProgress(run.progress || 0)}</td>
                 <td>${run.profile_name || ''}</td>
