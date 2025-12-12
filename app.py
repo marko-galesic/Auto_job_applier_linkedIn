@@ -4,7 +4,7 @@ from collections import deque
 from typing import Any, Dict
 
 from datetime import datetime
-from modules.helpers import get_log_path
+from modules.helpers import get_chromedriver_log_path, get_log_path
 from modules.job_store import JobStore
 from modules.job_worker import JobWorker
 from werkzeug.utils import secure_filename
@@ -22,6 +22,7 @@ JOBS_DB_PATH = os.getenv('JOBS_DB_PATH', os.path.join('data', 'jobs.db'))
 RESUME_UPLOAD_PATH = os.getenv('DEFAULT_RESUME_PATH', os.path.join('all resumes', 'uploaded', 'resume.pdf'))
 ALLOWED_RESUME_EXTENSIONS = {'.pdf', '.doc', '.docx'}
 LOG_PATH = get_log_path()
+CHROMEDRIVER_LOG_PATH = get_chromedriver_log_path()
 
 job_store = JobStore(JOBS_DB_PATH)
 job_worker = JobWorker(job_store, poll_interval=5)
@@ -128,6 +129,23 @@ def get_job_run_logs(run_id: str):
 
     try:
         with open(LOG_PATH, 'r', encoding='utf-8') as file:
+            tail_lines = list(deque(file, maxlen=200))
+        return jsonify({"logs": tail_lines})
+    except Exception as exc:  # pragma: no cover - defensive logging
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route('/job-runs/<run_id>/chromedriver-logs', methods=['GET'])
+def get_job_run_chromedriver_logs(run_id: str):
+    _ = _get_job_run(run_id)
+    if not _:
+        return jsonify({"error": "Job run not found"}), 404
+
+    if not os.path.exists(CHROMEDRIVER_LOG_PATH):
+        return jsonify({"logs": [], "message": "ChromeDriver log file not found"})
+
+    try:
+        with open(CHROMEDRIVER_LOG_PATH, 'r', encoding='utf-8') as file:
             tail_lines = list(deque(file, maxlen=200))
         return jsonify({"logs": tail_lines})
     except Exception as exc:  # pragma: no cover - defensive logging

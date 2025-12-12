@@ -116,8 +116,13 @@
     </div>
 
     <section class="card">
+        <h2>JobWorker log</h2>
+        <pre id="workerLogs">Loading logs…</pre>
+    </section>
+
+    <section class="card">
         <h2>Chrome driver log</h2>
-        <pre id="logs">Loading logs…</pre>
+        <pre id="chromedriverLogs">Loading ChromeDriver logs…</pre>
     </section>
 
     <section class="card">
@@ -162,15 +167,27 @@
         }
     }
 
-    async function loadLogs() {
+    async function loadWorkerLogs() {
         try {
             const response = await fetch(`/job-runs/${runId}/logs`);
             if (!response.ok) return;
             const payload = await response.json();
             const lines = payload.logs || [];
-            document.getElementById('logs').textContent = lines.join('');
+            document.getElementById('workerLogs').textContent = lines.join('');
         } catch (e) {
-            document.getElementById('logs').textContent = 'Unable to load logs.';
+            document.getElementById('workerLogs').textContent = 'Unable to load logs.';
+        }
+    }
+
+    async function loadChromedriverLogs() {
+        try {
+            const response = await fetch(`/job-runs/${runId}/chromedriver-logs`);
+            if (!response.ok) return;
+            const payload = await response.json();
+            const lines = payload.logs || [];
+            document.getElementById('chromedriverLogs').textContent = lines.join('');
+        } catch (e) {
+            document.getElementById('chromedriverLogs').textContent = 'Unable to load ChromeDriver logs.';
         }
     }
 
@@ -206,11 +223,13 @@
     }
 
     loadRun();
-    loadLogs();
+    loadWorkerLogs();
+    loadChromedriverLogs();
     loadAppliedJobs();
     setInterval(() => {
         loadRun();
-        loadLogs();
+        loadWorkerLogs();
+        loadChromedriverLogs();
     }, 5000);
 </script>
 </body>
