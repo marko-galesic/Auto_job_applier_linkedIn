@@ -61,6 +61,16 @@ def make_directories(paths: list[str]) -> None:
             print(f'Error while creating directory "{path}": ', e)
 
 
+def get_screenshot_directory() -> str:
+    '''
+    Return the directory where ChromeDriver screenshots are stored, ensuring it exists.
+    '''
+    directory = os.path.join(logs_folder_path, "screenshots")
+    directory = directory.replace("//", "/")
+    os.makedirs(directory, exist_ok=True)
+    return directory
+
+
 def find_default_profile_directory() -> str | None:
     '''
     Dynamically finds the default Google Chrome 'User Data' directory path
@@ -149,6 +159,22 @@ def get_chromedriver_log_path() -> str:
     path = path.replace("//", "/")
     _ensure_log_directory(path)
     return path
+
+
+def get_latest_screenshot_path() -> str | None:
+    '''
+    Return the most recently created ChromeDriver screenshot path if available.
+    '''
+    directory = get_screenshot_directory()
+    screenshots = [
+        os.path.join(directory, name)
+        for name in os.listdir(directory)
+        if name.lower().endswith(".png")
+    ]
+    if not screenshots:
+        return None
+
+    return max(screenshots, key=os.path.getmtime)
 
 
 __logs_file_path = get_log_path()

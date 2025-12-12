@@ -13,8 +13,11 @@ version:    24.12.29.12.30
 '''
 
 import os
+import threading
+import time
+from datetime import datetime
 
-from modules.helpers import make_directories
+from modules.helpers import get_screenshot_directory, make_directories
 from config.settings import run_in_background, stealth_mode, disable_extensions, safe_mode, file_name, failed_file_name, logs_folder_path, generated_resume_path
 from config.questions import default_resume_path
 if stealth_mode:
@@ -26,6 +29,50 @@ else:
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from modules.helpers import find_default_profile_directory, critical_error_log, print_lg
+
+_screenshot_thread_started = False
+_SCREENSHOT_INTERVAL_SECONDS = 1
+_SCREENSHOT_RETENTION_COUNT = 120
+
+
+def _trim_old_screenshots(directory: str) -> None:
+    screenshots = [
+        os.path.join(directory, name)
+        for name in os.listdir(directory)
+        if name.lower().endswith(".png")
+    ]
+    screenshots.sort(key=os.path.getmtime, reverse=True)
+    for stale in screenshots[_SCREENSHOT_RETENTION_COUNT:]:
+        try:
+            os.remove(stale)
+        except Exception:
+            continue
+
+
+def _start_screenshot_loop(driver):
+    global _screenshot_thread_started
+    if _screenshot_thread_started:
+        return
+
+    screenshots_dir = get_screenshot_directory()
+
+    def _capture_loop():
+        while True:
+            try:
+                timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S%fZ")
+                destination = os.path.join(
+                    screenshots_dir, f"chromedriver-{timestamp}.png"
+                )
+                driver.save_screenshot(destination)
+                _trim_old_screenshots(screenshots_dir)
+            except Exception as exc:
+                print_lg(f"[Screenshots] Failed to capture frame: {exc}")
+            time.sleep(_SCREENSHOT_INTERVAL_SECONDS)
+
+    thread = threading.Thread(target=_capture_loop, daemon=True)
+    thread.start()
+    _screenshot_thread_started = True
+
 
 try:
     chromedriver_log_file = os.path.join(logs_folder_path, "chromedriver.log")
@@ -68,6 +115,7 @@ try:
     else:
         chrome_service = Service(log_path=chromedriver_log_file, service_args=["--verbose"])
         driver = webdriver.Chrome(options=options, service=chrome_service)
+    _start_screenshot_loop(driver)
     driver.maximize_window()
     wait = WebDriverWait(driver, 5)
     actions = ActionChains(driver)
