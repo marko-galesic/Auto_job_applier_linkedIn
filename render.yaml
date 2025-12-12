@@ -6,7 +6,12 @@ services:
     branch: main
     region: oregon
     repo: https://github.com/marko-galesic/Auto_job_applier_linkedIn
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    buildCommand: |
+      apt-get update
+      apt-get install -y chromium chromium-driver
+      rm -rf /var/lib/apt/lists/*
+      pip install --upgrade pip
+      pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     autoDeploy: true
     healthCheckPath: /
