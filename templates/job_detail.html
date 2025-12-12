@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Run Details</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --surface: #ffffff;
+            --muted: #f3f4f6;
+            --border: #e5e7eb;
+            --text: #111827;
+        }
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: #f8fafc;
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+        }
+        main {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 0 18px 40px;
+        }
+        h1 {
+            margin: 0 0 6px;
+            font-size: 22px;
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+            margin-bottom: 16px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 14px;
+        }
+        .muted { color: #6b7280; }
+        .progress {
+            position: relative;
+            width: 100%;
+            height: 12px;
+            background: var(--muted);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .progress span {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            background: var(--primary);
+        }
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+            overflow: auto;
+            max-height: 380px;
+            white-space: pre-wrap;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        a { color: var(--primary); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .pill {
+            display: inline-flex;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: var(--muted);
+            font-weight: 600;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <p class="muted"><a href="/">← Back to dashboard</a></p>
+    <h1>Job run <span id="runId"></span></h1>
+    <p class="muted">Live logs and applied jobs for this run.</p>
+</header>
+<main>
+    <div class="grid">
+        <section class="card">
+            <h2>Run status</h2>
+            <p id="status" class="pill">Loading...</p>
+            <div class="progress" aria-label="Progress">
+                <span id="progressBar" style="width:0%"></span>
+            </div>
+            <p class="muted" id="meta"></p>
+        </section>
+        <section class="card">
+            <h2>Key filters</h2>
+            <p><strong>Keywords:</strong> <span id="keywords">—</span></p>
+            <p><strong>Locations:</strong> <span id="locations">—</span></p>
+            <p><strong>Profile:</strong> <span id="profile">—</span></p>
+        </section>
+    </div>
+
+    <section class="card">
+        <h2>Chrome driver log</h2>
+        <pre id="logs">Loading logs…</pre>
+    </section>
+
+    <section class="card">
+        <h2>Applied jobs</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Job</th>
+                    <th>Company</th>
+                    <th>HR</th>
+                    <th>External link</th>
+                    <th>Applied</th>
+                </tr>
+            </thead>
+            <tbody id="appliedJobs"></tbody>
+        </table>
+    </section>
+</main>
+
+<script>
+    const runId = '{{ run_id }}';
+    document.getElementById('runId').textContent = runId;
+
+    function renderRun(run) {
+        document.getElementById('status').textContent = run.status;
+        document.getElementById('progressBar').style.width = `${run.progress || 0}%`;
+        document.getElementById('meta').textContent = `Created ${new Date(run.created_at).toLocaleString()}`;
+        document.getElementById('keywords').textContent = run.filters?.keywords || '—';
+        document.getElementById('locations').textContent = run.filters?.locations || '—';
+        document.getElementById('profile').textContent = run.profile_name || '—';
+    }
+
+    async function loadRun() {
+        try {
+            const response = await fetch(`/job-runs/${runId}`);
+            if (!response.ok) return;
+            const run = await response.json();
+            renderRun(run);
+        } catch (e) {
+            console.error('Failed to load run', e);
+        }
+    }
+
+    async function loadLogs() {
+        try {
+            const response = await fetch(`/job-runs/${runId}/logs`);
+            if (!response.ok) return;
+            const payload = await response.json();
+            const lines = payload.logs || [];
+            document.getElementById('logs').textContent = lines.join('');
+        } catch (e) {
+            document.getElementById('logs').textContent = 'Unable to load logs.';
+        }
+    }
+
+    function buildAppliedRow(job, index) {
+        const tr = document.createElement('tr');
+        const hrLink = job.HR_Link && job.HR_Name && job.HR_Name !== 'Unknown'
+            ? `<a href="${job.HR_Link}" target="_blank">${job.HR_Name}</a>` : 'N/A';
+        const external = job.External_Job_link
+            ? `<a href="${job.External_Job_link}" target="_blank">External</a>`
+            : 'N/A';
+        const applied = job.Date_Applied && job.Date_Applied !== 'Pending' ? '✓' : '';
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td><a href="${job.Job_Link}" target="_blank">${job.Title}</a></td>
+            <td>${job.Company}</td>
+            <td>${hrLink}</td>
+            <td>${external}</td>
+            <td>${applied}</td>`;
+        return tr;
+    }
+
+    async function loadAppliedJobs() {
+        try {
+            const response = await fetch('/applied-jobs');
+            if (!response.ok) return;
+            const jobs = await response.json();
+            const tbody = document.getElementById('appliedJobs');
+            tbody.innerHTML = '';
+            jobs.forEach((job, index) => tbody.appendChild(buildAppliedRow(job, index)));
+        } catch (e) {
+            console.error('Failed to load applied jobs', e);
+        }
+    }
+
+    loadRun();
+    loadLogs();
+    loadAppliedJobs();
+    setInterval(() => {
+        loadRun();
+        loadLogs();
+    }, 5000);
+</script>
+</body>
+</html>

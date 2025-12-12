@@ -1,9 +1,11 @@
 import csv
 import json
 import os
+from collections import deque
 from typing import Any, Dict
 
 from datetime import datetime, timezone
+from modules.helpers import get_log_path
 from modules.job_store import JobStore
 from modules.job_worker import JobWorker
 from werkzeug.utils import secure_filename
@@ -20,10 +22,18 @@ PATH = 'all excels/'
 JOBS_DB_PATH = os.getenv('JOBS_DB_PATH', os.path.join('data', 'jobs.db'))
 RESUME_UPLOAD_PATH = os.getenv('DEFAULT_RESUME_PATH', os.path.join('all resumes', 'uploaded', 'resume.pdf'))
 ALLOWED_RESUME_EXTENSIONS = {'.pdf', '.doc', '.docx'}
+LOG_PATH = get_log_path()
 
 job_store = JobStore(JOBS_DB_PATH)
 job_worker = JobWorker(job_store)
 JOB_RUNS_FILE = 'job_runs.json'
+
+
+def get_history_csv_path() -> str:
+    """Return absolute path to the applied jobs history CSV."""
+    from config.settings import file_name
+
+    return os.path.join(os.getcwd(), file_name)
 
 
 def load_job_runs():
@@ -103,6 +113,12 @@ def home():
     return render_template('index.html', api_base_url=api_base_url)
 
 
+@app.route('/job-runs/<run_id>/view', methods=['GET'])
+def view_job_run(run_id: str):
+    """Render a lightweight details page for a specific job run."""
+    return render_template('job_detail.html', run_id=run_id)
+
+
 @app.route('/job-runs', methods=['GET'])
 def list_job_runs():
     """Return job runs with simulated progress updates for the dashboard."""
@@ -136,6 +152,40 @@ def create_job_run():
     save_job_runs(job_runs)
 
     return jsonify(new_run), 201
+
+
+def _get_job_run(run_id: str) -> Dict[str, Any] | None:
+    """Retrieve a single job run entry by ID."""
+    job_runs = refresh_job_runs(load_job_runs())
+    for run in job_runs:
+        if run.get('id') == run_id:
+            return run
+    return None
+
+
+@app.route('/job-runs/<run_id>', methods=['GET'])
+def get_job_run_details(run_id: str):
+    run = _get_job_run(run_id)
+    if not run:
+        return jsonify({"error": "Job run not found"}), 404
+    return jsonify(run)
+
+
+@app.route('/job-runs/<run_id>/logs', methods=['GET'])
+def get_job_run_logs(run_id: str):
+    _ = _get_job_run(run_id)
+    if not _:
+        return jsonify({"error": "Job run not found"}), 404
+
+    if not os.path.exists(LOG_PATH):
+        return jsonify({"logs": [], "message": "Log file not found"})
+
+    try:
+        with open(LOG_PATH, 'r', encoding='utf-8') as file:
+            tail_lines = list(deque(file, maxlen=200))
+        return jsonify({"logs": tail_lines})
+    except Exception as exc:  # pragma: no cover - defensive logging
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.route('/upload-resume', methods=['POST'])
