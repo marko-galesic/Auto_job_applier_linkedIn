@@ -3,6 +3,7 @@ import subprocess
 import sys
 import threading
 import time
+from typing import Optional
 
 from modules.job_store import JobStore
 
@@ -17,14 +18,25 @@ class JobWorker:
         self.store = store
         self.poll_interval = poll_interval
         self.jobs_queue: "queue.Queue[str]" = queue.Queue()
-        self.worker_thread = threading.Thread(target=self._run, daemon=True)
-        self.worker_thread.start()
+        self.worker_thread: Optional[threading.Thread] = None
+        self._ensure_worker_thread()
 
     def enqueue(self, job_id: str) -> None:
         '''
         Add a job to the internal queue for asynchronous processing.
         '''
+        self._ensure_worker_thread()
         self.jobs_queue.put(job_id)
+
+    def _ensure_worker_thread(self) -> None:
+        '''
+        Lazily start or restart the background worker thread if it stops.
+        '''
+        if self.worker_thread and self.worker_thread.is_alive():
+            return
+
+        self.worker_thread = threading.Thread(target=self._run, daemon=True)
+        self.worker_thread.start()
 
     def _run(self) -> None:
         '''
