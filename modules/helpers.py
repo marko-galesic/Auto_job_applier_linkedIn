@@ -23,7 +23,13 @@ import pathlib
 from time import sleep
 from random import randint
 from datetime import datetime, timedelta
-from pyautogui import alert
+try:
+    from pyautogui import alert as gui_alert
+except Exception:
+    # Fallback for headless environments (e.g., server deployments without DISPLAY)
+    def gui_alert(message: str, title: str | None = None, button: str = "OK"):
+        print(f"[ALERT{f' {title}' if title else ''}] {message}")
+        return button
 from pprint import pprint
 
 from config.settings import logs_folder_path
@@ -129,7 +135,7 @@ def print_lg(*msgs: str | dict, end: str = "\n", pretty: bool = False, flush: bo
                 file.write(str(message) + end)
     except Exception as e:
         trail = f'Skipped saving this message: "{message}" to log.txt!' if from_critical else "We'll try one more time to log..."
-        alert(f"log.txt in {logs_folder_path} is open or is occupied by another program! Please close it! {trail}", "Failed Logging")
+        gui_alert(f"log.txt in {logs_folder_path} is open or is occupied by another program! Please close it! {trail}", "Failed Logging")
         if not from_critical:
             critical_error_log("Log.txt is open or is occupied by another program!", e)
 #>
@@ -160,7 +166,6 @@ def manual_login_retry(is_logged_in: callable, limit: int = 2) -> None:
     '''
     count = 0
     while not is_logged_in():
-        from pyautogui import alert
         print_lg("Seems like you're not logged in!")
         button = "Confirm Login"
         message = 'After you successfully Log In, please click "{}" button below.'.format(button)
@@ -168,7 +173,7 @@ def manual_login_retry(is_logged_in: callable, limit: int = 2) -> None:
             button = "Skip Confirmation"
             message = 'If you\'re seeing this message even after you logged in, Click "{}". Seems like auto login confirmation failed!'.format(button)
         count += 1
-        if alert(message, "Login Required", button) and count > limit: return
+        if gui_alert(message, "Login Required", button) and count > limit: return
 
 
 
