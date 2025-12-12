@@ -34,8 +34,14 @@ class JobWorker:
             job_id = self.jobs_queue.get()
             if job_id is None:
                 break
-            self._process(job_id)
-            self.jobs_queue.task_done()
+            ##> ------ OpenAI Assistant : openai-assistant@example.com - Bug fix ------
+            try:
+                self._process(job_id)
+            except Exception as exc:  # pragma: no cover - defensive fallback
+                self.store.update_status(job_id, status="failed", error=str(exc))
+            finally:
+                self.jobs_queue.task_done()
+            ##<
 
     def _process(self, job_id: str) -> None:
         '''
