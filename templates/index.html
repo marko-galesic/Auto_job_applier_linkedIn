@@ -484,6 +484,16 @@
                 </div>
                 <div class="form-row">
                     <div>
+                        <label for="linkedinUsername">LinkedIn username</label>
+                        <input type="text" id="linkedinUsername" placeholder="Stored in your browser">
+                    </div>
+                    <div>
+                        <label for="linkedinPassword">LinkedIn password</label>
+                        <input type="password" id="linkedinPassword" placeholder="Stored in your browser">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
                         <label for="phone">Phone *</label>
                         <input type="tel" id="phone" required>
                     </div>
@@ -652,6 +662,8 @@
             personal: {
                 fullName: document.getElementById('fullName').value.trim(),
                 email: document.getElementById('email').value.trim(),
+                username: document.getElementById('linkedinUsername').value.trim(),
+                password: document.getElementById('linkedinPassword').value,
                 phone: document.getElementById('phone').value.trim(),
                 location: document.getElementById('location').value.trim(),
                 resume: resumePath,
@@ -692,6 +704,8 @@
         syncProfileSelection(profileName);
         document.getElementById('fullName').value = personal.fullName || '';
         document.getElementById('email').value = personal.email || '';
+        document.getElementById('linkedinUsername').value = personal.username || '';
+        document.getElementById('linkedinPassword').value = personal.password || '';
         document.getElementById('phone').value = personal.phone || '';
         document.getElementById('location').value = personal.location || '';
         setResumeStatus(personal.resume ? `Using uploaded resume` : 'No file uploaded', personal.resume || '');
