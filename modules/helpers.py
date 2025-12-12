@@ -109,16 +109,36 @@ def critical_error_log(possible_reason: str, stack_trace: Exception) -> None:
     print_lg(possible_reason, stack_trace, datetime.now(), from_critical=True)
 
 
+def _ensure_log_directory(path: str) -> None:
+    '''
+    Make sure the directory for the log file exists before attempting writes.
+    '''
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+
 def get_log_path():
     '''
-    Function to replace '//' with '/' for logs path
+    Function to replace '//' with '/' for logs path and ensure directory exists.
     '''
     try:
         path = logs_folder_path+"/log.txt"
-        return path.replace("//","/")
+        path = path.replace("//","/")
+        _ensure_log_directory(path)
+        return path
     except Exception as e:
-        critical_error_log("Failed getting log path! So assigning default logs path: './logs/log.txt'", e)
-        return "logs/log.txt"
+        print(
+            "[ALERT Failed Logging] Unable to prepare logs directory; using ./logs/log.txt",
+            file=sys.stderr,
+        )
+        print(e, file=sys.stderr)
+        fallback_path = "./logs/log.txt"
+        try:
+            _ensure_log_directory(fallback_path)
+        except Exception:
+            pass
+        return fallback_path
 
 
 __logs_file_path = get_log_path()
@@ -130,6 +150,7 @@ def print_lg(*msgs: str | dict, end: str = "\n", pretty: bool = False, flush: bo
     Function to log and print. **Note that, `end` and `flush` parameters are ignored if `pretty = True`**
     '''
     try:
+        _ensure_log_directory(__logs_file_path)
         for message in msgs:
             pprint(message) if pretty else print(message, end=end, flush=flush)
             with open(__logs_file_path, 'a+', encoding="utf-8") as file:
