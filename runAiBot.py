@@ -70,6 +70,16 @@ full_name = first_name + " " + middle_name + " " + last_name if middle_name else
 useNewResume = True
 randomly_answered_questions = set()
 
+
+class UnrecognizedQuestionError(Exception):
+    """Raised when the bot encounters a question it cannot confidently answer."""
+
+
+def abort_on_unrecognized(question_detail) -> None:
+    detail_text = question_detail if isinstance(question_detail, str) else str(question_detail)
+    randomly_answered_questions.add(detail_text)
+    raise UnrecognizedQuestionError(f"Unrecognized question encountered: {detail_text}")
+
 tabs_count = 1
 easy_applied_count = 0
 external_jobs_count = 0
@@ -438,9 +448,11 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
     # all_questions = all_questions + all_list_questions + all_single_line_questions
 
     for Question in all_questions:
+        handled_question = False
         # Check if it's a select Question
         select = try_xp(Question, ".//select", False)
         if select:
+            handled_question = True
             label_org = "Unknown"
             try:
                 label = Question.find_element(By.TAG_NAME, "label")
@@ -508,17 +520,15 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
                                 foundOption = True
                                 break
                     if not foundOption:
-                        #TODO: Use AI to answer the question need to be implemented logic to extract the options for the question
-                        print_lg(f'Failed to find an option with text "{answer}" for question labelled "{label_org}", answering randomly!')
-                        select.select_by_index(randint(1, len(select.options)-1))
-                        answer = select.first_selected_option.text
-                        randomly_answered_questions.add((f'{label_org} [ {options} ]',"select"))
+                        print_lg(f'Failed to find an option with text "{answer}" for question labelled "{label_org}"')
+                        abort_on_unrecognized(f'{label_org} [ {options} ]')
             questions_list.add((f'{label_org} [ {options} ]', answer, "select", prev_answer))
             continue
         
         # Check if it's a radio Question
         radio = try_xp(Question, './/fieldset[@data-test-form-builder-radio-button-form-component="true"]', False)
         if radio:
+            handled_question = True
             prev_answer = None
             label = try_xp(radio, './/span[@data-test-form-builder-radio-button-form-component__title]', False)
             try: label = find_by_class(label, "visually-hidden", 2.0)
@@ -545,37 +555,19 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
                     answer = disability_status
                 else: answer = answer_common_questions(label,answer)
                 foundOption = try_xp(radio, f".//label[normalize-space()='{answer}']", False)
-                if foundOption: 
+                if foundOption:
                     actions.move_to_element(foundOption).click().perform()
-                else:    
+                else:
                     possible_answer_phrases = ["Decline", "not wish", "don't wish", "Prefer not", "not want"] if answer == 'Decline' else [answer]
-                    ele = options[0]
-                    answer = options_labels[0]
-                    for phrase in possible_answer_phrases:
-                        for i, option_label in enumerate(options_labels):
-                            if phrase in option_label:
-                                foundOption = options[i]
-                                ele = foundOption
-                                answer = f'Decline ({option_label})' if len(possible_answer_phrases) > 1 else option_label
-                                break
-                        if foundOption: break
-                    # if answer == 'Decline':
-                    #     answer = options_labels[0]
-                    #     for phrase in ["Prefer not", "not want", "not wish"]:
-                    #         foundOption = try_xp(radio, f".//label[normalize-space()='{phrase}']", False)
-                    #         if foundOption:
-                    #             answer = f'Decline ({phrase})'
-                    #             ele = foundOption
-                    #             break
-                    actions.move_to_element(ele).click().perform()
-                    if not foundOption: randomly_answered_questions.add((f'{label_org} ]',"radio"))
+                    abort_on_unrecognized(f'{label_org} ]')
             else: answer = prev_answer
             questions_list.add((label_org+" ]", answer, "radio", prev_answer))
             continue
         
         # Check if it's a text question
         text = try_xp(Question, ".//input[@type='text']", False)
-        if text: 
+        if text:
+            handled_question = True
             do_actions = False
             label = try_xp(Question, ".//label[@for]", False)
             try: label = label.find_element(By.CLASS_NAME,'visually-hidden')
@@ -641,20 +633,16 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
                             elif ai_provider.lower() == "gemini":
                                 answer = gemini_answer_question(aiClient, label_org, options=None, question_type="text", job_description=job_description, about_company=None, user_information_all=user_information_all)
                             else:
-                                randomly_answered_questions.add((label_org, "text"))
-                                answer = years_of_experience
+                                abort_on_unrecognized(label_org)
                             if answer and isinstance(answer, str) and len(answer) > 0:
                                 print_lg(f'AI Answered received for question "{label_org}" \nhere is answer: "{answer}"')
                             else:
-                                randomly_answered_questions.add((label_org, "text"))
-                                answer = years_of_experience
+                                abort_on_unrecognized(label_org)
                         except Exception as e:
                             print_lg("Failed to get AI answer!", e)
-                            randomly_answered_questions.add((label_org, "text"))
-                            answer = years_of_experience
+                            abort_on_unrecognized(label_org)
                     else:
-                        randomly_answered_questions.add((label_org, "text"))
-                        answer = years_of_experience
+                        abort_on_unrecognized(label_org)
                 ##<
                 text.clear()
                 text.send_keys(answer)
@@ -668,6 +656,7 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
         # Check if it's a textarea question
         text_area = try_xp(Question, ".//textarea", False)
         if text_area:
+            handled_question = True
             label = try_xp(Question, ".//label[@for]", False)
             label_org = label.text if label else "Unknown"
             label = label_org.lower()
@@ -687,19 +676,16 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
                             elif ai_provider.lower() == "gemini":
                                 answer = gemini_answer_question(aiClient, label_org, options=None, question_type="textarea", job_description=job_description, about_company=None, user_information_all=user_information_all)
                             else:
-                                randomly_answered_questions.add((label_org, "textarea"))
-                                answer = ""
+                                abort_on_unrecognized(label_org)
                             if answer and isinstance(answer, str) and len(answer) > 0:
                                 print_lg(f'AI Answered received for question "{label_org}" \nhere is answer: "{answer}"')
                             else:
-                                randomly_answered_questions.add((label_org, "textarea"))
-                                answer = ""
+                                abort_on_unrecognized(label_org)
                         except Exception as e:
                             print_lg("Failed to get AI answer!", e)
-                            randomly_answered_questions.add((label_org, "textarea"))
-                            answer = ""
+                            abort_on_unrecognized(label_org)
                     else:
-                        randomly_answered_questions.add((label_org, "textarea"))
+                        abort_on_unrecognized(label_org)
             text_area.clear()
             text_area.send_keys(answer)
             if do_actions:
@@ -713,6 +699,7 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
         # Check if it's a checkbox question
         checkbox = try_xp(Question, ".//input[@type='checkbox']", False)
         if checkbox:
+            handled_question = True
             label = try_xp(Question, ".//span[@class='visually-hidden']", False)
             label_org = label.text if label else "Unknown"
             label = label_org.lower()
@@ -724,11 +711,15 @@ def answer_questions(modal: WebElement, questions_list: set, work_location: str,
                 try:
                     actions.move_to_element(checkbox).click().perform()
                     checked = True
-                except Exception as e: 
+                except Exception as e:
                     print_lg("Checkbox click failed!", e)
                     pass
             questions_list.add((f'{label} ([X] {answer})', checked, "checkbox", prev_answer))
             continue
+
+        if not handled_question:
+            summary = Question.text.strip() if Question.text else "Unknown question"
+            abort_on_unrecognized(summary)
 
 
     # Select todays date
@@ -1051,6 +1042,10 @@ def apply_to_jobs(search_terms: list[str]) -> None:
                                     if errored == "nose": raise Exception("Failed to click Submit application 😑")
 
 
+                        except UnrecognizedQuestionError as e:
+                            screenshot_name = screenshot(driver, job_id, "Unrecognized question encountered")
+                            critical_error_log("Unrecognized question encountered during Easy Apply", e)
+                            raise
                         except Exception as e:
                             print_lg("Failed to Easy apply!")
                             # print_lg(e)
@@ -1092,6 +1087,9 @@ def apply_to_jobs(search_terms: list[str]) -> None:
         except (NoSuchWindowException, WebDriverException) as e:
             print_lg("Browser window closed or session is invalid. Ending application process.", e)
             raise e # Re-raise to be caught by main
+        except UnrecognizedQuestionError as e:
+            print_lg("Encountered an unrecognized question. Terminating run.", e)
+            raise
         except Exception as e:
             print_lg("Failed to find Job listings!")
             critical_error_log("In Applier", e)

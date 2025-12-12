@@ -30,7 +30,10 @@ try:
 
     # Set up WebDriver with Chrome Profile
     options = uc.ChromeOptions() if stealth_mode else Options()
-    if run_in_background:   options.add_argument("--headless")
+    options.add_argument("--headless=new")
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--no-sandbox")
     if disable_extensions:  options.add_argument("--disable-extensions")
 
     print_lg("IF YOU HAVE MORE THAN 10 TABS OPENED, PLEASE CLOSE OR BOOKMARK THEM! Or it's highly likely that application will just open browser and not do anything!")
