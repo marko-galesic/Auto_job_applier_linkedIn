@@ -4,12 +4,16 @@ from collections import deque
 from typing import Any, Dict
 
 from datetime import datetime
-from modules.helpers import get_chromedriver_log_path, get_log_path
+from modules.helpers import (
+    get_chromedriver_log_path,
+    get_latest_screenshot_path,
+    get_log_path,
+)
 from modules.job_store import JobStore
 from modules.job_worker import JobWorker
 from werkzeug.utils import secure_filename
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -148,6 +152,24 @@ def get_job_run_chromedriver_logs(run_id: str):
         with open(CHROMEDRIVER_LOG_PATH, 'r', encoding='utf-8') as file:
             tail_lines = list(deque(file, maxlen=200))
         return jsonify({"logs": tail_lines})
+    except Exception as exc:  # pragma: no cover - defensive logging
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route('/job-runs/<run_id>/chromedriver-screenshot', methods=['GET'])
+def get_job_run_chromedriver_screenshot(run_id: str):
+    _ = _get_job_run(run_id)
+    if not _:
+        return jsonify({"error": "Job run not found"}), 404
+
+    latest = get_latest_screenshot_path()
+    if not latest:
+        return jsonify({"message": "No ChromeDriver screenshots available yet"}), 404
+
+    try:
+        response = send_file(latest, mimetype='image/png')
+        response.headers['Cache-Control'] = 'no-store'
+        return response
     except Exception as exc:  # pragma: no cover - defensive logging
         return jsonify({"error": str(exc)}), 500
 

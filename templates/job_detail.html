@@ -70,6 +70,23 @@
             max-height: 380px;
             white-space: pre-wrap;
         }
+        .screenshot-area { margin-top: 12px; }
+        .screenshot-header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+        .screenshot-frame {
+            background: #0f172a;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 140px;
+        }
+        .screenshot-frame img {
+            max-width: 100%;
+            border-radius: 10px;
+            display: none;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -123,6 +140,15 @@
     <section class="card">
         <h2>Chrome driver log</h2>
         <pre id="chromedriverLogs">Loading ChromeDriver logs…</pre>
+        <div class="screenshot-area">
+            <div class="screenshot-header">
+                <h3>Latest screenshot</h3>
+                <span class="muted" id="chromedriverScreenshotStatus">Waiting for screenshot…</span>
+            </div>
+            <div class="screenshot-frame">
+                <img id="chromedriverScreenshot" alt="Latest ChromeDriver screenshot">
+            </div>
+        </div>
     </section>
 
     <section class="card">
@@ -191,6 +217,43 @@
         }
     }
 
+    let currentScreenshotUrl;
+
+    function updateScreenshotStatus(message) {
+        document.getElementById('chromedriverScreenshotStatus').textContent = message;
+    }
+
+    async function loadChromedriverScreenshot() {
+        try {
+            const response = await fetch(`/job-runs/${runId}/chromedriver-screenshot?t=${Date.now()}`);
+            if (!response.ok) {
+                updateScreenshotStatus('Waiting for screenshot…');
+                return;
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.startsWith('image/')) {
+                updateScreenshotStatus('Waiting for screenshot…');
+                return;
+            }
+
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            if (currentScreenshotUrl) {
+                URL.revokeObjectURL(currentScreenshotUrl);
+            }
+            currentScreenshotUrl = objectUrl;
+
+            const img = document.getElementById('chromedriverScreenshot');
+            img.src = objectUrl;
+            img.style.display = 'block';
+            img.alt = `Latest ChromeDriver screenshot captured at ${new Date().toLocaleTimeString()}`;
+            updateScreenshotStatus(`Updated ${new Date().toLocaleTimeString()}`);
+        } catch (e) {
+            updateScreenshotStatus('Unable to load screenshot.');
+        }
+    }
+
     function buildAppliedRow(job, index) {
         const tr = document.createElement('tr');
         const hrLink = job.HR_Link && job.HR_Name && job.HR_Name !== 'Unknown'
@@ -225,12 +288,16 @@
     loadRun();
     loadWorkerLogs();
     loadChromedriverLogs();
+    loadChromedriverScreenshot();
     loadAppliedJobs();
     setInterval(() => {
         loadRun();
         loadWorkerLogs();
         loadChromedriverLogs();
     }, 5000);
+    setInterval(() => {
+        loadChromedriverScreenshot();
+    }, 1000);
 </script>
 </body>
 </html>
